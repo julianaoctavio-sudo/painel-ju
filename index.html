@@ -723,35 +723,32 @@ function delRotina(id){
 // ── PENDÊNCIAS ──
 async function initPend(){
   try{
-    // 1. busca pendências de hoje
-    const hoje=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
+    // 1. busca só pendências de hoje
+    const rows=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
     
-    // 2. busca pendências não concluídas de dias anteriores (carryover do Supabase)
-    const anteriores=await supaFetch('pendencias?data=neq.'+TODAY+'&done=eq.false&order=id.asc');
-    
-    // 3. migra pendências anteriores não concluídas para hoje
-    if(anteriores&&anteriores.length){
-      const jaExistemHoje=(hoje||[]).map(r=>r.texto);
-      for(const r of anteriores){
-        // só migra se não existir ainda hoje com mesmo texto
-        if(!jaExistemHoje.includes(r.texto)){
-          const novaRow=await supaFetch('pendencias','POST',{
-            data:TODAY,texto:r.texto,done:false,
-            carryover:true,recorrente:r.recorrente,rec_id:r.rec_id
-          });
-          if(hoje&&novaRow&&novaRow[0]) hoje.push(novaRow[0]);
+    if(rows!==null&&rows.length===0){
+      // hoje está vazio — verifica se tem pendências de ontem não concluídas pra fazer carryover
+      const ontem=await supaFetch('pendencias?data=not.like.arquivado_%&done=eq.false&data=neq.'+TODAY+'&order=id.asc&limit=50');
+      if(ontem&&ontem.length){
+        const textosMigrados=[];
+        for(const r of ontem){
+          // evita duplicar mesmo texto
+          if(textosMigrados.includes(r.texto)) continue;
+          textosMigrados.push(r.texto);
+          await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:true,recorrente:r.recorrente,rec_id:r.rec_id});
+          // arquiva o original
+          await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:'arquivado_'+r.data});
         }
-        // marca o original como arquivado atualizando a data pra não aparecer de novo
-        if(r.id) await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:'arquivado_'+r.data});
+        // recarrega hoje
+        const rowsNovos=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
+        const items=(rowsNovos||[]).map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
+        sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);return;
       }
     }
 
-    if(hoje!==null){
-      // recarrega hoje após migrações
-      const rowsAtualizadas=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
-      const items=(rowsAtualizadas||hoje).map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
-      sv('pend_list',items);sv('pend_date',TODAY);
-      renderPend(items);return;
+    if(rows!==null){
+      const items=rows.map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
+      sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);return;
     }
   }catch(e){console.error('initPend error:',e);}
   
