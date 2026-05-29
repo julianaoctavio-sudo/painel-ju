@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Dia — Ju</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#F5F2EC;--surface:#FEFCF8;--border:#D8D2C4;--text:#1A1714;--muted:#7A7368;
+    --accent:#2D6A4F;--accent-light:#D8EDE4;--amber:#B5600A;--amber-light:#FDF0E0;
+    --red:#B5290A;--red-light:#FDEAE6;--blue:#1A4A7A;--blue-light:#E3EDF8;--tag-bg:#EAE6DE;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;padding:28px 24px;}
+
+  /* HEADER */
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;border-bottom:1.5px solid var(--text);padding-bottom:14px;}
+  .header-title{font-family:'Fraunces',serif;font-weight:300;font-size:26px;letter-spacing:-0.5px;}
+  .header-title em{font-style:italic;color:var(--accent);}
+  .header-right{display:flex;align-items:center;gap:12px;}
+  .header-date{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+  .header-semana{font-size:10px;background:var(--accent-light);color:var(--accent);padding:2px 10px;border-radius:20px;border:1px solid var(--accent);}
+
+  /* ALERTA PRAZO */
+  .alerta-prazo{background:var(--red-light);border:1px solid var(--red);border-radius:6px;padding:10px 18px;margin-bottom:10px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--red);}
+  .alerta-prazo.amber{background:var(--amber-light);border-color:var(--amber);color:var(--amber);}
+
+  /* KR DO DIA */
+  .kr-hoje{background:var(--accent-light);border:1px solid var(--accent);border-radius:6px;padding:12px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+  .kr-hoje-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:2px;}
+  .kr-hoje-text{font-size:12.5px;color:var(--text);font-weight:500;}
+  .kr-hoje-marco{font-size:11px;margin-top:3px;}
+  .kr-hoje-dias{font-family:'Fraunces',serif;font-size:22px;font-weight:300;color:var(--accent);margin-left:auto;white-space:nowrap;text-align:right;}
+  .kr-hoje-dias span{font-size:11px;font-family:'DM Mono',monospace;display:block;color:var(--accent);opacity:0.7;}
+
+  /* COUNTDOWN */
+  .countdown-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 20px;margin-bottom:10px;}
+  .section-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+  .countdown-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:8px;}
+  .cd-item{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:10px 12px;}
+  .cd-item.urgente{border-color:var(--red);background:var(--red-light);}
+  .cd-item.atencao{border-color:var(--amber);background:var(--amber-light);}
+  .cd-item.vencido{border-color:var(--red);background:var(--red-light);opacity:0.6;}
+  .cd-num{font-family:'Fraunces',serif;font-size:24px;font-weight:300;line-height:1;margin-bottom:1px;}
+  .cd-num.urgente,.cd-num.vencido{color:var(--red);}
+  .cd-num.atencao{color:var(--amber);}
+  .cd-num.ok{color:var(--muted);}
+  .cd-sublabel{font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;}
+  .cd-name{font-size:11px;color:var(--text);line-height:1.4;margin-bottom:6px;}
+  .cd-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:3px;}
+  .cd-bar-fill{height:100%;border-radius:2px;}
+  .cd-prazo{font-size:9px;color:var(--muted);}
+  .cd-p{font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;display:inline-block;margin-bottom:3px;}
+  .cd-p.p1{background:var(--red-light);color:var(--red);}
+  .cd-p.p2{background:var(--amber-light);color:var(--amber);}
+  .cd-p.p3{background:var(--tag-bg);color:var(--muted);}
+
+  /* PROGRESS BARS */
+  .progress-geral{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:11px 20px;margin-bottom:8px;display:flex;align-items:center;gap:16px;}
+  .progress-geral-label{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .progress-track{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
+  .progress-track-fill{height:100%;border-radius:4px;transition:width 0.4s ease,background 0.4s ease;}
+  .progress-pct{font-size:13px;font-weight:500;min-width:36px;text-align:right;}
+  .progress-okr{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:11px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;}
+  .okr-bars{flex:1;display:flex;flex-direction:column;gap:4px;}
+  .okr-bar-row{display:flex;align-items:center;gap:8px;}
+  .okr-bar-name{font-size:9px;color:var(--muted);width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+  .okr-bar-track{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .okr-bar-fill{height:100%;border-radius:2px;transition:width 0.4s ease;}
+  .okr-bar-pct{font-size:9px;color:var(--muted);width:26px;text-align:right;flex-shrink:0;}
+  .okr-total{font-family:'Fraunces',serif;font-size:20px;font-weight:300;min-width:44px;text-align:right;}
+
+  /* GRID */
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .col-full{grid-column:1/-1;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 20px;}
+  .card-label{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+  .card-label::after{content:'';flex:1;height:1px;background:var(--border);}
+  .card-label-btn{background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;margin-left:auto;padding:0;}
+  .card-label-btn:hover{color:var(--accent);}
+
+  /* PRIORIDADE */
+  .p-badge{font-size:9px;font-weight:600;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+  .p-badge.p1{background:var(--red-light);color:var(--red);}
+  .p-badge.p2{background:var(--amber-light);color:var(--amber);}
+  .p-badge.p3{background:var(--tag-bg);color:var(--muted);}
+
+  /* ITENS COMUNS */
+  .routine-item,.pend-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);}
+  .routine-item:last-child,.pend-item:last-child{border-bottom:none;}
+  .routine-item.done,.pend-item.done{opacity:0.35;}
+  .routine-item.done .routine-text,.pend-item.done .pend-text{text-decoration:line-through;}
+  .check-box{width:15px;height:15px;border:1.5px solid var(--border);border-radius:3px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.15s,border-color 0.15s;}
+  .routine-text,.pend-text{line-height:1.5;font-size:12px;flex:1;}
+  .pend-text{cursor:pointer;}
+  .routine-tag{font-size:10px;padding:1px 6px;border-radius:20px;background:var(--tag-bg);color:var(--muted);white-space:nowrap;align-self:center;}
+  .tag-estrategico{background:var(--red-light);color:var(--red);}
+  .tag-financeiro{background:var(--blue-light);color:var(--blue);}
+  .tag-comunicacao{background:var(--amber-light);color:var(--amber);}
+  .pend-carry{font-size:10px;color:var(--amber);align-self:center;flex-shrink:0;}
+  .pend-recorrente{font-size:9px;padding:1px 6px;border-radius:10px;background:var(--accent-light);color:var(--accent);white-space:nowrap;align-self:center;flex-shrink:0;}
+  .item-del{background:none;border:none;color:var(--border);font-size:15px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;}
+  .item-del:hover{color:var(--red);}
+  .item-edit{background:none;border:none;color:var(--border);font-size:11px;cursor:pointer;padding:0 3px;line-height:1;flex-shrink:0;}
+  .item-edit:hover{color:var(--blue);}
+  .add-row{display:flex;gap:8px;margin-top:10px;}
+  .add-input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;padding:3px 0;}
+  .add-input::placeholder{color:var(--border);}
+  .add-btn{background:var(--accent);color:#fff;border:none;border-radius:3px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;}
+  .carry-hint{font-size:10px;color:var(--muted);margin-top:6px;}
+  .empty-state{font-size:11px;color:var(--muted);padding:8px 0;text-align:center;}
+
+
+  /* NOTAS DOS KRs */
+  .kr-nota-toggle{background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:3px;margin-top:6px;display:flex;align-items:center;gap:4px;transition:all 0.15s;}
+  .kr-nota-toggle:hover{background:var(--tag-bg);color:var(--text);}
+  .kr-nota-wrap{margin-top:8px;display:none;}
+  .kr-nota-wrap.open{display:block;}
+  .kr-nota-list{margin-bottom:6px;max-height:150px;overflow-y:auto;}
+  .kr-nota-entry{padding:5px 8px;border-left:2px solid var(--border);margin-bottom:4px;background:var(--bg);border-radius:0 4px 4px 0;display:flex;align-items:flex-start;gap:6px;}
+  .kr-nota-entry:last-child{margin-bottom:0;}
+  .kr-nota-entry-content{flex:1;}
+  .kr-nota-data{font-size:9px;color:var(--muted);margin-bottom:2px;}
+  .kr-nota-texto{font-size:11px;color:var(--text);line-height:1.5;}
+  .kr-nota-texto[contenteditable="true"]{outline:none;border-bottom:1px solid var(--accent);background:var(--accent-light);border-radius:2px;padding:0 2px;cursor:text;}
+  .kr-nota-actions{display:flex;gap:2px;flex-shrink:0;margin-top:1px;}
+  .kr-nota-action-btn{background:none;border:none;font-size:11px;cursor:pointer;color:var(--border);padding:0 2px;line-height:1;}
+  .kr-nota-action-btn:hover{color:var(--text);}
+  .kr-nota-action-btn.del:hover{color:var(--red);}
+  .kr-nota-add{display:flex;gap:6px;margin-top:6px;}
+  .kr-nota-input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text);outline:none;padding:3px 0;}
+  .kr-nota-input::placeholder{color:var(--border);}
+  .kr-nota-btn{background:var(--accent);color:#fff;border:none;border-radius:3px;padding:3px 10px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;}
+  .kr-nota-empty{font-size:10px;color:var(--muted);padding:4px 0;}
+
+  /* DIÁRIO LIVRE */
+  .diario-list{max-height:320px;overflow-y:auto;margin-bottom:10px;}
+  .diario-entry{padding:8px 10px;border-radius:4px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px;}
+  .diario-entry:last-child{margin-bottom:0;}
+  .diario-entry-header{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+  .diario-entry-data{font-size:9px;color:var(--muted);flex:1;}
+  .diario-entry-del{background:none;border:none;color:var(--border);font-size:14px;cursor:pointer;padding:0;line-height:1;}
+  .diario-entry-del:hover{color:var(--red);}
+  .diario-entry-texto{font-size:11.5px;color:var(--text);line-height:1.6;cursor:pointer;}
+  .diario-entry-texto[contenteditable="true"]{outline:none;border-bottom:1px solid var(--accent);background:var(--accent-light);border-radius:2px;padding:0 2px;}
+  .diario-add-area{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);padding:8px 10px;outline:none;resize:none;line-height:1.6;min-height:72px;}
+  .diario-add-area::placeholder{color:var(--border);}
+  .diario-add-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+  .diario-hint{font-size:9px;color:var(--muted);}
+  /* POMODORO */
+  .pomo-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 22px;display:flex;align-items:center;gap:22px;}
+  .pomo-left{flex:1;}
+  .pomo-title-sm{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px;}
+  .pomo-phase-txt{font-size:12px;color:var(--text);margin-bottom:8px;}
+  .pomo-ciclos{display:flex;gap:5px;}
+  .ciclo-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--border);transition:all 0.3s;}
+  .ciclo-dot.done{background:var(--accent);border-color:var(--accent);}
+  .ciclo-dot.active{background:var(--amber);border-color:var(--amber);}
+  .pomo-center{display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .pomo-ring{position:relative;width:84px;height:84px;}
+  .pomo-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg);}
+  .pomo-ring-bg{fill:none;stroke:var(--border);stroke-width:3.5;}
+  .pomo-ring-fill{fill:none;stroke-width:3.5;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke 0.3s;}
+  .pomo-time{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:19px;font-weight:300;}
+  .pomo-btns{display:flex;gap:7px;}
+  .pomo-btn{padding:5px 14px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted);}
+  .pomo-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .pomo-right{font-size:10px;color:var(--muted);line-height:1.8;min-width:90px;}
+  .pomo-right strong{color:var(--text);font-size:17px;font-family:'Fraunces',serif;font-weight:300;display:block;}
+
+  /* MARCOS */
+  .kr-marcos{margin-top:8px;display:flex;flex-direction:column;gap:1px;}
+  .marco-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;cursor:pointer;transition:background 0.15s;}
+  .marco-item:hover{background:var(--bg);}
+  .marco-item.done{opacity:0.4;}
+  .marco-item.done .marco-text{text-decoration:line-through;}
+  .marco-check{width:13px;height:13px;border:1.5px solid var(--border);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+  .marco-check.done{background:var(--accent);border-color:var(--accent);}
+  .marco-text{flex:1;font-size:11px;color:var(--text);line-height:1.4;}
+  .marco-prazo{font-size:10px;color:var(--muted);white-space:nowrap;background:var(--tag-bg);padding:1px 6px;border-radius:10px;}
+
+  /* KRs */
+  .kr-section{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 20px;}
+  .kr-item{padding:11px 0;border-bottom:1px solid var(--border);}
+  .kr-item:last-child{border-bottom:none;}
+  .kr-header{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;}
+  .kr-priority{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px;}
+  .kr-priority.p1{background:var(--red-light);color:var(--red);}
+  .kr-priority.p2{background:var(--amber-light);color:var(--amber);}
+  .kr-priority.p3{background:var(--tag-bg);color:var(--muted);}
+  .kr-text{font-size:12px;line-height:1.5;flex:1;}
+  .kr-badge{font-size:10px;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+  .badge-red{background:var(--red-light);color:var(--red);}
+  .badge-amber{background:var(--amber-light);color:var(--amber);}
+  .kr-prazo{font-size:10px;color:var(--muted);margin-bottom:5px;}
+  .kr-progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .kr-progress-fill{height:100%;border-radius:2px;transition:width 0.4s ease;}
+  .fill-red{background:var(--red);}.fill-amber{background:var(--amber);}.fill-green{background:var(--accent);}
+  .kr-progress-label{font-size:10px;color:var(--muted);margin-top:3px;display:flex;justify-content:space-between;}
+  .progress-input{width:100%;margin-top:5px;accent-color:var(--accent);}
+
+  .save-hint{font-size:10px;color:var(--muted);margin-top:14px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Painel do dia — <em>Ju</em></div>
+  <div class="header-right">
+    <span class="header-semana" id="semana-ciclo"></span>
+    <span class="header-date" id="date-display"></span>
+  </div>
+</div>
+
+<!-- FOCO ESTRATÉGICO -->
+<div class="kr-hoje" id="kr-hoje-block">
+  <div style="font-size:18px;flex-shrink:0">🎯</div>
+  <div style="flex:1">
+    <div class="kr-hoje-label">Foco estratégico de hoje</div>
+    <div class="kr-hoje-text" id="kr-hoje-text">—</div>
+    <div class="kr-hoje-marco" id="kr-hoje-marco"></div>
+  </div>
+  <div class="kr-hoje-dias" id="kr-hoje-dias">—<span id="kr-hoje-dias-label"></span></div>
+</div>
+
+<!-- ALERTAS DE PRAZO -->
+<div id="alertas-container"></div>
+
+<!-- COUNTDOWN -->
+<div class="countdown-block">
+  <div class="section-label">Cronograma de entregas</div>
+  <div class="countdown-grid" id="countdown-grid"></div>
+</div>
+
+<!-- PROGRESSO DO DIA -->
+<div class="progress-geral">
+  <span class="progress-geral-label">progresso do dia</span>
+  <div class="progress-track"><div class="progress-track-fill" id="prog-fill" style="width:0%"></div></div>
+  <span class="progress-pct" id="prog-pct" style="color:var(--muted)">0%</span>
+</div>
+
+<!-- PROGRESSO DOS OKRs -->
+<div class="progress-okr">
+  <span class="progress-geral-label">progresso<br>OKRs</span>
+  <div class="okr-bars" id="okr-bars"></div>
+  <div class="okr-total" id="okr-total" style="color:var(--muted)">0%</div>
+</div>
+
+<div class="grid">
+
+  <!-- ROTINAS -->
+  <div class="card">
+    <div class="card-label">Rotinas do dia</div>
+    <div id="rotinas-list"></div>
+    <div class="add-row">
+      <input class="add-input" id="rot-add-input" type="text" placeholder="+ adicionar rotina..." onkeydown="if(event.key==='Enter')addRotina()">
+      <button class="add-btn" onclick="addRotina()">adicionar</button>
+    </div>
+  </div>
+
+  <!-- PENDÊNCIAS -->
+  <div class="card">
+    <div class="card-label">
+      Pendências do dia
+      <button class="card-label-btn" onclick="sortPend()" title="ordenar por status">↕ ordenar</button>
+    </div>
+    <div id="pend-list"></div>
+    <div class="add-row">
+      <input class="add-input" id="add-input" type="text" placeholder="+ adicionar pendência..." onkeydown="if(event.key==='Enter')addPend()">
+      <button class="add-btn" onclick="addPend()">adicionar</button>
+    </div>
+    <div class="carry-hint">↩ não concluídas aparecem amanhã automaticamente</div>
+  </div>
+
+  <!-- DIÁRIO DE ANOTAÇÕES -->
+  <div class="card">
+    <div class="card-label">Anotações</div>
+    <div class="diario-list" id="diario-list"></div>
+    <textarea class="diario-add-area" id="diario-input" placeholder="Escreva sua anotação aqui...&#10;Ex: Identifiquei desvio no orçamento de marketing..."></textarea>
+    <div class="diario-add-row">
+      <span class="diario-hint">duplo clique para editar · persiste até excluir</span>
+      <button class="add-btn" onclick="addDiario()">salvar</button>
+    </div>
+  </div>
+
+  <!-- POMODORO -->
+  <div class="col-full">
+    <div class="pomo-wrap">
+      <div class="pomo-left">
+        <div class="pomo-title-sm">Pomodoro — bloco de foco</div>
+        <div class="pomo-phase-txt" id="pomo-phase-label">🍅 Foco — 25 min</div>
+        <div class="pomo-ciclos" id="pomo-dots"></div>
+      </div>
+      <div class="pomo-center">
+        <div class="pomo-ring">
+          <svg width="84" height="84" viewBox="0 0 84 84">
+            <circle class="pomo-ring-bg" cx="42" cy="42" r="36"/>
+            <circle class="pomo-ring-fill" id="pomo-ring-fill" cx="42" cy="42" r="36"
+              stroke="var(--accent)" stroke-dasharray="226.19" stroke-dashoffset="0"/>
+          </svg>
+          <div class="pomo-time" id="pomo-time">25:00</div>
+        </div>
+        <div class="pomo-btns">
+          <button class="pomo-btn primary" id="pomo-start-btn" onclick="togglePomo()">iniciar</button>
+          <button class="pomo-btn" onclick="resetPomo()">resetar</button>
+        </div>
+      </div>
+      <div class="pomo-right">
+        <strong id="pomo-ciclo-count">0</strong>ciclos hoje<br><br>
+        🍅 25 min foco<br>☕ 5 min pausa<br>🌿 15 min cada 4
+      </div>
+    </div>
+  </div>
+
+  <!-- OKRs 2026 -->
+  <div class="kr-section col-full">
+    <div class="section-label">OKRs 2026</div>
+    <div class="kr-item">
+      <div class="kr-header"><span class="kr-priority p1">P1</span><div class="kr-text">Revisão orçamento Q2/Q3 — CTO e CEO</div><span class="kr-badge badge-red">urgente</span></div>
+      <div class="kr-prazo">ciclo completo: validação → 19 mai → 26 mai → 05 jun</div>
+      <div class="kr-marcos" id="kr1-marcos">
+        <div class="marco-item" data-kr="1" data-idx="0" onclick="toggleMarco(1,0)"><div class="marco-check" id="kr1-m0"></div><span class="marco-text">Concluir e validar revisão Q2/Q3 com liderança</span><span class="marco-prazo">pré-requisito</span></div>
+        <div class="marco-item" data-kr="1" data-idx="1" onclick="toggleMarco(1,1)"><div class="marco-check" id="kr1-m1"></div><span class="marco-text">Apresentar para CTO e CEO</span><span class="marco-prazo">19 mai</span></div>
+        <div class="marco-item" data-kr="1" data-idx="2" onclick="toggleMarco(1,2)"><div class="marco-check" id="kr1-m2"></div><span class="marco-text">Entregar planilha orçado x realizado para cada líder</span><span class="marco-prazo" style="background:var(--red-light);color:var(--red);font-weight:600;">hoje — 26 mai</span></div>
+        <div class="marco-item" data-kr="1" data-idx="3" onclick="toggleMarco(1,3)"><div class="marco-check" id="kr1-m3"></div><span class="marco-text">Lançar projeções Q2/Q3 no Nibo (Performance e Fiscal)</span><span class="marco-prazo">05 jun</span></div>
+      </div>
+      <div class="kr-progress-bar" style="margin-top:8px"><div class="kr-progress-fill fill-red" id="kr1-fill" style="width:0%"></div></div>
+      <div class="kr-progress-label"><span>marcos concluídos</span><span id="kr1-pct">0%</span></div>
+      <button class="kr-nota-toggle" onclick="toggleKrNota(1)">📝 <span id="kr1-nota-lbl">notas</span></button>
+      <div class="kr-nota-wrap" id="kr1-nota-wrap">
+        <div class="kr-nota-list" id="kr1-nota-list"></div>
+        <div class="kr-nota-add">
+          <input class="kr-nota-input" id="kr1-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(1)">
+          <button class="kr-nota-btn" onclick="addKrNota(1)">salvar</button>
+        </div>
+      </div>
+    </div>
+    <div class="kr-item">
+      <div class="kr-header"><span class="kr-priority p1">P1</span><div class="kr-text">3 apresentações para CTO e CEO — DRE, DFC, indicadores, desvios</div><span class="kr-badge badge-amber">mensal</span></div>
+      <div class="kr-prazo">3 entregas fixas · mín. 3 melhorias por apresentação</div>
+      <div class="kr-marcos" id="kr4-marcos">
+        <div class="marco-item" data-kr="4" data-idx="0" onclick="toggleMarco(4,0)"><div class="marco-check" id="kr4-m0"></div><span class="marco-text">1ª apresentação — DRE, DFC, indicadores, desvios e recomendações</span><span class="marco-prazo">10 jun</span></div>
+        <div class="marco-item" data-kr="4" data-idx="1" onclick="toggleMarco(4,1)"><div class="marco-check" id="kr4-m1"></div><span class="marco-text">2ª apresentação — DRE, DFC, indicadores, desvios e recomendações</span><span class="marco-prazo">10 jul</span></div>
+        <div class="marco-item" data-kr="4" data-idx="2" onclick="toggleMarco(4,2)"><div class="marco-check" id="kr4-m2"></div><span class="marco-text">3ª apresentação — DRE, DFC, indicadores, desvios e recomendações</span><span class="marco-prazo">10 ago</span></div>
+      </div>
+      <div class="kr-progress-bar" style="margin-top:8px"><div class="kr-progress-fill fill-amber" id="kr4-fill" style="width:0%"></div></div>
+      <div class="kr-progress-label"><span>marcos concluídos</span><span id="kr4-pct">0%</span></div>
+      <button class="kr-nota-toggle" onclick="toggleKrNota(4)">📝 <span id="kr4-nota-lbl">notas</span></button>
+      <div class="kr-nota-wrap" id="kr4-nota-wrap">
+        <div class="kr-nota-list" id="kr4-nota-list"></div>
+        <div class="kr-nota-add">
+          <input class="kr-nota-input" id="kr4-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(4)">
+          <button class="kr-nota-btn" onclick="addKrNota(4)">salvar</button>
+        </div>
+      </div>
+    </div>
+    <div class="kr-item">
+      <div class="kr-header"><span class="kr-priority p2">P2</span><div class="kr-text">Projeção DFC e DRE semanal ao líder — variação orçado x realizado, riscos e plano de ação</div><span class="kr-badge badge-amber">semanal</span></div>
+      <div class="kr-prazo">14 apresentações · 28 mai → 27 ago · toda quarta-feira</div>
+      <div class="kr-marcos" id="kr2-marcos">
+        <div class="marco-item" data-kr="2" data-idx="0" onclick="toggleMarco(2,0)"><div class="marco-check" id="kr2-m0"></div><span class="marco-text">Apresentação 1 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">28 mai</span></div>
+        <div class="marco-item" data-kr="2" data-idx="1" onclick="toggleMarco(2,1)"><div class="marco-check" id="kr2-m1"></div><span class="marco-text">Apresentação 2 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">04 jun</span></div>
+        <div class="marco-item" data-kr="2" data-idx="2" onclick="toggleMarco(2,2)"><div class="marco-check" id="kr2-m2"></div><span class="marco-text">Apresentação 3 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">11 jun</span></div>
+        <div class="marco-item" data-kr="2" data-idx="3" onclick="toggleMarco(2,3)"><div class="marco-check" id="kr2-m3"></div><span class="marco-text">Apresentação 4 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">18 jun</span></div>
+        <div class="marco-item" data-kr="2" data-idx="4" onclick="toggleMarco(2,4)"><div class="marco-check" id="kr2-m4"></div><span class="marco-text">Apresentação 5 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">25 jun</span></div>
+        <div class="marco-item" data-kr="2" data-idx="5" onclick="toggleMarco(2,5)"><div class="marco-check" id="kr2-m5"></div><span class="marco-text">Apresentação 6 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">02 jul</span></div>
+        <div class="marco-item" data-kr="2" data-idx="6" onclick="toggleMarco(2,6)"><div class="marco-check" id="kr2-m6"></div><span class="marco-text">Apresentação 7 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">09 jul</span></div>
+        <div class="marco-item" data-kr="2" data-idx="7" onclick="toggleMarco(2,7)"><div class="marco-check" id="kr2-m7"></div><span class="marco-text">Apresentação 8 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">16 jul</span></div>
+        <div class="marco-item" data-kr="2" data-idx="8" onclick="toggleMarco(2,8)"><div class="marco-check" id="kr2-m8"></div><span class="marco-text">Apresentação 9 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">23 jul</span></div>
+        <div class="marco-item" data-kr="2" data-idx="9" onclick="toggleMarco(2,9)"><div class="marco-check" id="kr2-m9"></div><span class="marco-text">Apresentação 10 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">30 jul</span></div>
+        <div class="marco-item" data-kr="2" data-idx="10" onclick="toggleMarco(2,10)"><div class="marco-check" id="kr2-m10"></div><span class="marco-text">Apresentação 11 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">06 ago</span></div>
+        <div class="marco-item" data-kr="2" data-idx="11" onclick="toggleMarco(2,11)"><div class="marco-check" id="kr2-m11"></div><span class="marco-text">Apresentação 12 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">13 ago</span></div>
+        <div class="marco-item" data-kr="2" data-idx="12" onclick="toggleMarco(2,12)"><div class="marco-check" id="kr2-m12"></div><span class="marco-text">Apresentação 13 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">20 ago</span></div>
+        <div class="marco-item" data-kr="2" data-idx="13" onclick="toggleMarco(2,13)"><div class="marco-check" id="kr2-m13"></div><span class="marco-text">Apresentação 14 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">27 ago</span></div>
+      </div>
+      <div class="kr-progress-bar" style="margin-top:10px"><div class="kr-progress-fill fill-amber" id="kr2-fill" style="width:0%"></div></div>
+      <div class="kr-progress-label"><span>apresentações concluídas</span><span id="kr2-pct">0%</span></div>
+      <button class="kr-nota-toggle" onclick="toggleKrNota(2)">📝 <span id="kr2-nota-lbl">notas</span></button>
+      <div class="kr-nota-wrap" id="kr2-nota-wrap">
+        <div class="kr-nota-list" id="kr2-nota-list"></div>
+        <div class="kr-nota-add">
+          <input class="kr-nota-input" id="kr2-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(2)">
+          <button class="kr-nota-btn" onclick="addKrNota(2)">salvar</button>
+        </div>
+      </div>
+    </div>
+    <div class="kr-item">
+      <div class="kr-header"><span class="kr-priority p2">P2</span><div class="kr-text">Definir 8 datas de pagamento e renegociar 60% dos fornecedores</div><span class="kr-badge badge-amber">31 jul</span></div>
+      <div class="kr-prazo">prazo: 31 jul · alta dependência de terceiros</div>
+      <input type="range" class="progress-input" id="kr5-range" min="0" max="100" value="0" step="1" oninput="updateKR(5,this.value)">
+      <div class="kr-progress-bar"><div class="kr-progress-fill fill-amber" id="kr5-fill" style="width:0%"></div></div>
+      <div class="kr-progress-label"><span>0%</span><span id="kr5-pct">0%</span></div>
+      <button class="kr-nota-toggle" onclick="toggleKrNota(5)">📝 <span id="kr5-nota-lbl">notas</span></button>
+      <div class="kr-nota-wrap" id="kr5-nota-wrap">
+        <div class="kr-nota-list" id="kr5-nota-list"></div>
+        <div class="kr-nota-add">
+          <input class="kr-nota-input" id="kr5-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(5)">
+          <button class="kr-nota-btn" onclick="addKrNota(5)">salvar</button>
+        </div>
+      </div>
+    </div>
+    <div class="kr-item">
+      <div class="kr-header"><span class="kr-priority p3">P3</span><div class="kr-text">Entregar planilha automatizada DFC e DRE de agosto (orçado vs realizado)</div><span class="kr-badge badge-amber">30 ago</span></div>
+      <div class="kr-prazo">prazo: 30 ago · baixa dependência · alta dificuldade</div>
+      <input type="range" class="progress-input" id="kr3-range" min="0" max="100" value="10" step="1" oninput="updateKR(3,this.value)">
+      <div class="kr-progress-bar"><div class="kr-progress-fill fill-amber" id="kr3-fill" style="width:10%"></div></div>
+      <div class="kr-progress-label"><span>0%</span><span id="kr3-pct">10%</span></div>
+      <button class="kr-nota-toggle" onclick="toggleKrNota(3)">📝 <span id="kr3-nota-lbl">notas</span></button>
+      <div class="kr-nota-wrap" id="kr3-nota-wrap">
+        <div class="kr-nota-list" id="kr3-nota-list"></div>
+        <div class="kr-nota-add">
+          <input class="kr-nota-input" id="kr3-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(3)">
+          <button class="kr-nota-btn" onclick="addKrNota(3)">salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="save-hint">dica: salve o arquivo e fixe a aba no navegador (clique direito → fixar aba) · Netlify + Supabase em breve</div>
+
+<script>
+const DAYS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const now=new Date();
+const TODAY=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+document.getElementById('date-display').textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()]+' '+now.getFullYear();
+
+// semana do ciclo (25/05 → 30/08)
+const CICLO_START=parseLocalDate('2026-05-25');
+const semanaNum=Math.max(1,Math.ceil(((now-CICLO_START)/(1000*60*60*24*7))+1));
+document.getElementById('semana-ciclo').textContent='semana '+semanaNum+' de 14';
+
+// ── SUPABASE ──
+const SUPA_URL='https://jftzmonfswdjchrclvmq.supabase.co';
+const SUPA_KEY='sb_publishable_Ti0pBfSREN-mJnf1XKrkhg_8BDexZoH';
+async function supaFetch(path,method='GET',body=null){
+  try{
+    const opts={method,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'}};
+    if(body)opts.body=JSON.stringify(body);
+    const res=await fetch(SUPA_URL+'/rest/v1/'+path,opts);
+    if(!res.ok)return null;
+    const txt=await res.text();return txt?JSON.parse(txt):null;
+  }catch(e){return null;}
+}
+
+function ld(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+// parse date string as local date (avoids UTC offset issues)
+function parseLocalDate(str){const[y,m,d]=str.split('-').map(Number);const dt=new Date(y,m-1,d);dt.setHours(0,0,0,0);return dt;}
+
+// ── HISTÓRICO (Supabase only) ──
+function logHist(texto, tipo){
+  const ts=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  supaFetch('historico','POST',{data:TODAY,texto,tipo,hora:ts}).catch(()=>{});
+}
+
+// ── PROGRESSO ──
+function updateOKRProgress(){
+  const krDefs=[{id:1,name:'Orçamento Q2/Q3'},{id:4,name:'Apresentações CTO/CEO'},{id:2,name:'DFC/DRE semanal'},{id:5,name:'Fornecedores'},{id:3,name:'Planilha DFC/DRE'}];
+  const krs=ld('krs',{});
+  const container=document.getElementById('okr-bars');
+  if(!container)return;
+  container.innerHTML='';
+  let total=0;
+  krDefs.forEach(k=>{
+    const pct=krs['kr'+k.id]||0;total+=pct;
+    const clr=pct<30?'var(--red)':pct<70?'var(--amber)':'var(--accent)';
+    const row=document.createElement('div');row.className='okr-bar-row';
+    row.innerHTML=`<span class="okr-bar-name">${k.name}</span><div class="okr-bar-track"><div class="okr-bar-fill" style="width:${pct}%;background:${clr}"></div></div><span class="okr-bar-pct">${pct}%</span>`;
+    container.appendChild(row);
+  });
+  const avg=Math.round(total/krDefs.length);
+  const el=document.getElementById('okr-total');
+  if(el){el.textContent=avg+'%';el.style.color=avg<30?'var(--red)':avg<70?'var(--amber)':'var(--accent)';}
+}
+function updateProg(){
+  const all=document.querySelectorAll('.routine-item,.pend-item').length;
+  const done=document.querySelectorAll('.routine-item.done,.pend-item.done').length;
+  const pct=all===0?0:Math.round((done/all)*100);
+  document.getElementById('prog-fill').style.cssText='width:'+pct+'%;background:'+(pct<30?'var(--red)':pct<70?'var(--amber)':'var(--accent)');
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-pct').style.color=pct<30?'var(--red)':pct<70?'var(--amber)':'var(--accent)';
+}
+
+// ── ALERTAS DE PRAZO ──
+const KRS=[
+  {id:1,label:'Orçamento Q2/Q3 — CTO e CEO',prazo:'2026-06-05',p:'p1',
+   marcos:['Concluir e validar revisão Q2/Q3 com liderança','Apresentar para CTO e CEO','Entregar planilha orçado x realizado para cada líder','Lançar projeções Q2/Q3 no Nibo (Performance e Fiscal)'],
+   marcosPrazos:['2026-05-19','2026-05-19','2026-05-26','2026-06-05']},
+  {id:4,label:'Apresentações CTO/CEO — jun/jul/ago',prazo:'2026-06-10',p:'p1',
+   marcos:['1ª apresentação (jun)','2ª apresentação (jul)','3ª apresentação (ago)'],
+   marcosPrazos:['2026-06-10','2026-07-10','2026-08-10']},
+  {id:2,label:'Projeção DFC e DRE semanal ao líder',prazo:'2026-08-27',p:'p2',marcos:['Apresentação 1 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 2 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 3 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 4 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 5 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 6 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 7 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 8 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 9 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 10 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 11 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 12 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 13 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 14 — DFC/DRE, variação orçado x realizado, riscos e plano de ação'],marcosPrazos:['2026-05-28', '2026-06-04', '2026-06-11', '2026-06-18', '2026-06-25', '2026-07-02', '2026-07-09', '2026-07-16', '2026-07-23', '2026-07-30', '2026-08-06', '2026-08-13', '2026-08-20', '2026-08-27']},
+  {id:5,label:'Renegociar 60% fornecedores',prazo:'2026-07-31',p:'p2',marcos:[],marcosPrazos:[]},
+  {id:3,label:'Planilha automatizada DFC/DRE agosto',prazo:'2026-08-30',p:'p3',marcos:[],marcosPrazos:[]},
+];
+function initAlertas(){
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const container=document.getElementById('alertas-container');
+  container.innerHTML='';
+  // descobre qual KR é o foco estratégico pra não duplicar alerta
+  let focoId=null;
+  const candidatos=[];
+  KRS.forEach(kr=>{
+    const prazo=parseLocalDate(kr.prazo);
+    const dias=Math.round((prazo-hoje)/(1000*60*60*24));
+    const krState=ld('kr'+kr.id+'_marcos',kr.marcos.map(()=>false));
+    const concluido=kr.marcos.length>0?krState.every(Boolean):(ld('krs',{})['kr'+kr.id]||0)>=100;
+    if(!concluido&&dias>=0){
+      const proximoIdx=kr.marcos.findIndex((_,i)=>!krState[i]);
+      const marcoPrazo=kr.marcosPrazos&&proximoIdx>=0?kr.marcosPrazos[proximoIdx]:null;
+      const marcoDias=marcoPrazo?Math.round((parseLocalDate(marcoPrazo)-hoje)/(1000*60*60*24)):dias;
+      candidatos.push({id:kr.id,label:kr.label,marcoDias,p:kr.p});
+    }
+  });
+  candidatos.sort((a,b)=>a.p<b.p?-1:a.p>b.p?1:a.marcoDias-b.marcoDias);
+  if(candidatos.length) focoId=candidatos[0].id;
+
+  KRS.forEach(kr=>{
+    const prazo=parseLocalDate(kr.prazo);
+    const krState=ld('kr'+kr.id+'_marcos',kr.marcos.map(()=>false));
+    const concluido=kr.marcos.length>0?krState.every(Boolean):(ld('krs',{})['kr'+kr.id]||0)>=100;
+    // pega prazo do próximo marco pendente
+    const proximoIdx=kr.marcos.findIndex((_,i)=>!krState[i]);
+    const marcoPrazo=kr.marcosPrazos&&proximoIdx>=0?kr.marcosPrazos[proximoIdx]:null;
+    const prazoEfetivo=marcoPrazo?parseLocalDate(marcoPrazo):prazo;
+    const dias=Math.round((prazoEfetivo-hoje)/(1000*60*60*24));
+    // não mostra alerta se: concluído, já é o foco estratégico, ou prazo > 7 dias
+    if(concluido||kr.id===focoId||dias<0||dias>7) return;
+    const div=document.createElement('div');
+    div.className='alerta-prazo'+(dias<=3?'':' amber');
+    div.innerHTML='⚠️ <strong>'+kr.label+'</strong> — prazo em '+(dias===0?'hoje':dias===1?'amanhã':dias+' dias');
+    container.appendChild(div);
+  });
+}
+
+// ── COUNTDOWN + KR DO DIA ──
+function initCountdown(){
+  const grid=document.getElementById('countdown-grid');
+  grid.innerHTML='';
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  let krHoje=null;
+  // coleta todos os KRs não concluídos com seus próximos marcos
+  const candidatos=[];
+  KRS.forEach(kr=>{
+    const prazo=parseLocalDate(kr.prazo);
+    const dias=Math.round((prazo-hoje)/(1000*60*60*24));
+    const inicio=new Date('2026-01-01');
+    const pct=Math.min(100,Math.max(0,Math.round(((hoje-inicio)/(prazo-inicio))*100)));
+    const status=dias<0?'vencido':dias<=7?'urgente':dias<=30?'atencao':'ok';
+    const barClr=status==='urgente'||status==='vencido'?'var(--red)':status==='atencao'?'var(--amber)':'var(--accent)';
+    const sublabel=dias<0?'VENCIDO':dias===0?'HOJE':dias===1?'AMANHÃ':'DIAS RESTANTES';
+    const prazoFmt=prazo.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    const el=document.createElement('div');
+    grid.appendChild(el);
+        const krState=ld('kr'+kr.id+'_marcos',kr.marcos.map(()=>false));
+    const concluido=kr.marcos.length>0?krState.every(Boolean):(ld('krs',{})['kr'+kr.id]||0)>=100;
+    // para countdown: usa prazo do próximo marco pendente se disponível
+    const proximoIdx=kr.marcos.findIndex((_,i)=>!krState[i]);
+    const proximoMarcoPrazo=kr.marcosPrazos&&proximoIdx>=0?kr.marcosPrazos[proximoIdx]:null;
+    const prazoEfetivo=proximoMarcoPrazo?new Date(proximoMarcoPrazo+'T12:00:00'):prazo;
+    const diasEfetivo=Math.round((prazoEfetivo-hoje)/(1000*60*60*24));
+    const statusEfetivo=diasEfetivo<0?'vencido':diasEfetivo<=7?'urgente':diasEfetivo<=30?'atencao':'ok';
+    const barClrEfetivo=statusEfetivo==='urgente'||statusEfetivo==='vencido'?'var(--red)':statusEfetivo==='atencao'?'var(--amber)':'var(--accent)';
+    const sublabelEfetivo=diasEfetivo<0?'ATRASADO':diasEfetivo===0?'HOJE':diasEfetivo===1?'AMANHÃ':'DIAS RESTANTES';
+    const prazoFmtEfetivo=prazoEfetivo.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    // label extra pra KRs com próximo marco
+    const marcoLabel=proximoMarcoPrazo&&kr.marcos.length>4?'próxima: '+prazoEfetivo.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',weekday:'short'}):'';
+    el.className='cd-item '+statusEfetivo;
+    el.innerHTML='<div class="cd-p '+kr.p+'">'+kr.p.toUpperCase()+'</div><div class="cd-num '+statusEfetivo+'">'+(diasEfetivo<0?Math.abs(diasEfetivo):diasEfetivo)+'</div><div class="cd-sublabel">'+sublabelEfetivo+'</div><div class="cd-name">'+kr.label+(marcoLabel?'<br><span style="font-size:9px;color:var(--muted)">'+marcoLabel+'</span>':'')+'</div><div class="cd-bar"><div class="cd-bar-fill" style="width:'+pct+'%;background:'+barClrEfetivo+'"></div></div><div class="cd-prazo">prazo: '+prazoFmtEfetivo+'</div>';
+    if(!concluido&&dias>=0){
+      const proximoMarco=proximoIdx>=0?kr.marcos[proximoIdx]:null;
+      const marcoDias=proximoMarcoPrazo?diasEfetivo:dias;
+      candidatos.push({label:kr.label,marco:proximoMarco,dias,status,marcoDias,marcoPrazo:proximoMarcoPrazo,p:kr.p});
+    }
+  });
+  // ordena por prazo do próximo marco (mais urgente primeiro), priorizando P1
+  candidatos.sort((a,b)=>{
+    if(a.p!==b.p) return a.p<b.p?-1:1; // P1 antes de P2/P3
+    return a.marcoDias-b.marcoDias; // dentro do mesmo nível, mais urgente primeiro
+  });
+  if(candidatos.length) krHoje=candidatos[0];
+  const block=document.getElementById('kr-hoje-block');
+  if(krHoje){
+    const cor=krHoje.marcoDias<=0?'var(--red)':krHoje.marcoDias<=7?'var(--amber)':'var(--accent)';
+    const corLight=krHoje.marcoDias<=0?'var(--red-light)':krHoje.marcoDias<=7?'var(--amber-light)':'var(--accent-light)';
+    block.style.background=corLight;block.style.borderColor=cor;
+    document.querySelector('.kr-hoje-label').style.color=cor;
+    document.getElementById('kr-hoje-text').textContent=krHoje.label;
+    const diasLabel=krHoje.marcoDias<0?'atrasado':krHoje.marcoDias===0?'hoje!':krHoje.marcoDias===1?'amanhã':krHoje.marcoDias+' dias';
+    const prazoFmt=krHoje.marcoPrazo?parseLocalDate(krHoje.marcoPrazo).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):'';
+    document.getElementById('kr-hoje-marco').innerHTML=krHoje.marco
+      ?`<span style="color:${cor}">→ próximo passo: ${krHoje.marco}</span>`:'';
+    document.getElementById('kr-hoje-dias').childNodes[0].textContent=diasLabel;
+    document.getElementById('kr-hoje-dias-label').textContent=prazoFmt?'· '+prazoFmt:'';
+    document.getElementById('kr-hoje-dias').style.color=cor;
+  } else {
+    block.innerHTML='<div style="font-size:18px">🎉</div><div><div class="kr-hoje-label">Foco estratégico</div><div class="kr-hoje-text">Todos os OKRs concluídos!</div></div>';
+  }
+}
+
+// ── ROTINAS ──
+const DEFAULT_ROTINAS=[
+  {id:'r1',text:'Alinhamento diário com coordenadora',tag:'estratégico',tagClass:'tag-estrategico',p:'p1'},
+  {id:'r2',text:'Verificar e-mail',tag:'comunicação',tagClass:'tag-comunicacao',p:'p2'},
+  {id:'r3',text:'Verificar Desk — solicitações e NFs',tag:'comunicação',tagClass:'tag-comunicacao',p:'p2'},
+  {id:'r4',text:'Pagamentos do dia',tag:'financeiro',tagClass:'tag-financeiro',p:'p2'},
+  {id:'r5',text:'Conciliação de pagamentos',tag:'quando pago',tagClass:'tag-financeiro',p:'p3'},
+  {id:'r6',text:'Acompanhamento do cartão de crédito',tag:'financeiro',tagClass:'tag-financeiro',p:'p3'},
+  {id:'r7',text:'Lançamento Nibo e planilha do cartão',tag:'financeiro',tagClass:'tag-financeiro',p:'p3'},
+];
+const CHK='<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+async function initRoutines(){
+  try{
+    const rows=await supaFetch('notas?aba=eq.rotinas_def');
+    if(rows&&rows.length&&rows[0].conteudo){
+      const saved=JSON.parse(rows[0].conteudo);
+      if(saved&&saved.length){
+        sv('rotinas_def',saved);renderRotinas();return;
+      }
+    }
+    // Supabase vazio — usa padrão e salva lá
+    const rotinas=ld('rotinas_def',null)||DEFAULT_ROTINAS;
+    sv('rotinas_def',rotinas);
+    supaFetch('notas','POST',{aba:'rotinas_def',conteudo:JSON.stringify(rotinas)}).catch(()=>{});
+    renderRotinas();
+  }catch(e){
+    // erro de rede — usa localStorage ou padrão
+    const rotinas=ld('rotinas_def',null)||DEFAULT_ROTINAS;
+    sv('rotinas_def',rotinas);
+    renderRotinas();
+  }
+}
+function renderRotinas(){
+  const rotinas=ld('rotinas_def',DEFAULT_ROTINAS);
+  const state=ld('rotinas_'+TODAY,{});
+  const list=document.getElementById('rotinas-list');list.innerHTML='';
+  rotinas.forEach((r,i)=>{
+    const done=!!state[r.id];
+    const div=document.createElement('div');
+    div.className='routine-item'+(done?' done':'');div.dataset.id=r.id;
+    div.draggable=true;div.dataset.ridx=i;
+    div.addEventListener('dragstart',e=>{e.dataTransfer.setData('rot',i);div.classList.add('dragging');});
+    div.addEventListener('dragend',()=>div.classList.remove('dragging'));
+    div.addEventListener('dragover',e=>{e.preventDefault();div.classList.add('drag-over');});
+    div.addEventListener('dragleave',()=>div.classList.remove('drag-over'));
+    div.addEventListener('drop',e=>{
+      e.preventDefault();div.classList.remove('drag-over');
+      const from=parseInt(e.dataTransfer.getData('rot'));
+      const to=parseInt(div.dataset.ridx);if(from===to)return;
+      const rots=ld('rotinas_def',DEFAULT_ROTINAS);const[moved]=rots.splice(from,1);rots.splice(to,0,moved);
+      sv('rotinas_def',rots);
+      supaFetch('notas?aba=eq.rotinas_def','PATCH',{conteudo:JSON.stringify(rots),updated_at:new Date().toISOString()}).catch(()=>{});
+      renderRotinas();
+    });
+    // drag handle
+    const handle=document.createElement('span');handle.className='drag-handle';handle.textContent='⠿';div.appendChild(handle);
+    // badge
+    const badge=document.createElement('div');badge.className='p-badge '+r.p;badge.textContent=r.p.toUpperCase();div.appendChild(badge);
+    // checkbox
+    const chk=document.createElement('div');chk.className='check-box';
+    chk.style.cssText=done?'background:var(--accent);border-color:var(--accent);':'';
+    chk.innerHTML=done?CHK:'';chk.onclick=()=>toggleRoutine(r.id);div.appendChild(chk);
+    // text — dblclick to edit
+    const txt=document.createElement('span');txt.className='routine-text';txt.textContent=r.text;
+    txt.addEventListener('dblclick',()=>{
+      txt.contentEditable='true';txt.focus();
+      const range=document.createRange();range.selectNodeContents(txt);
+      const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+    });
+    txt.addEventListener('blur',()=>{
+      txt.contentEditable='false';
+      const rots=ld('rotinas_def',DEFAULT_ROTINAS);const rot=rots.find(x=>x.id===r.id);
+      if(rot){rot.text=txt.textContent.trim()||rot.text;sv('rotinas_def',rots);}
+    });
+    txt.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();txt.blur();}});
+    div.appendChild(txt);
+    // tag
+    const tag=document.createElement('span');tag.className='routine-tag '+r.tagClass;tag.textContent=r.tag;div.appendChild(tag);
+    // delete
+    const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>delRotina(r.id);div.appendChild(del);
+    list.appendChild(div);
+  });
+  // hint
+  if(!list.querySelector('.edit-hint')){
+    const h=document.createElement('div');h.className='edit-hint';h.textContent='duplo clique para editar · ⠿ para reordenar';list.appendChild(h);
+  }
+  updateProg();
+}
+function toggleRoutine(id){
+  const state=ld('rotinas_'+TODAY,{});
+  const was=state[id];state[id]=!state[id];sv('rotinas_'+TODAY,state);
+  if(!was){
+    const r=ld('rotinas_def',DEFAULT_ROTINAS).find(x=>x.id===id);
+    if(r){
+      const log=ld('hist_'+TODAY,[]);
+      const jaLogado=log.some(e=>e.texto==='✓ '+r.text&&e.tipo==='rotina');
+      if(!jaLogado)logHist('✓ '+r.text,'rotina');
+    }
+  }
+  renderRotinas();
+}
+function addRotina(){
+  const input=document.getElementById('rot-add-input');const text=input.value.trim();if(!text)return;input.value='';
+  const rotinas=ld('rotinas_def',DEFAULT_ROTINAS);rotinas.push({id:'r_'+Date.now(),text,tag:'',tagClass:'',p:'p3'});
+  sv('rotinas_def',rotinas);
+  supaFetch('notas?aba=eq.rotinas_def','PATCH',{conteudo:JSON.stringify(rotinas),updated_at:new Date().toISOString()}).then(r=>{
+    if(!r||!r.length) supaFetch('notas','POST',{aba:'rotinas_def',conteudo:JSON.stringify(rotinas)});
+  }).catch(()=>{});
+  renderRotinas();
+}
+function delRotina(id){
+  const rotinasFiltradas=ld('rotinas_def',DEFAULT_ROTINAS).filter(r=>r.id!==id);
+  sv('rotinas_def',rotinasFiltradas);
+  supaFetch('notas?aba=eq.rotinas_def','PATCH',{conteudo:JSON.stringify(rotinasFiltradas),updated_at:new Date().toISOString()}).catch(()=>{});
+  const state=ld('rotinas_'+TODAY,{});delete state[id];sv('rotinas_'+TODAY,state);renderRotinas();
+}
+
+
+// ── PENDÊNCIAS ──
+async function initPend(){
+  try{
+    // 1. busca pendências de hoje
+    const hoje=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
+    
+    // 2. busca pendências não concluídas de dias anteriores (carryover do Supabase)
+    const anteriores=await supaFetch('pendencias?data=neq.'+TODAY+'&done=eq.false&order=id.asc');
+    
+    // 3. migra pendências anteriores não concluídas para hoje
+    if(anteriores&&anteriores.length){
+      const jaExistemHoje=(hoje||[]).map(r=>r.texto);
+      for(const r of anteriores){
+        // só migra se não existir ainda hoje com mesmo texto
+        if(!jaExistemHoje.includes(r.texto)){
+          const novaRow=await supaFetch('pendencias','POST',{
+            data:TODAY,texto:r.texto,done:false,
+            carryover:true,recorrente:r.recorrente,rec_id:r.rec_id
+          });
+          if(hoje&&novaRow&&novaRow[0]) hoje.push(novaRow[0]);
+        }
+        // marca o original como arquivado atualizando a data pra não aparecer de novo
+        if(r.id) await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:'arquivado_'+r.data});
+      }
+    }
+
+    if(hoje!==null){
+      // recarrega hoje após migrações
+      const rowsAtualizadas=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
+      const items=(rowsAtualizadas||hoje).map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
+      sv('pend_list',items);sv('pend_date',TODAY);
+      renderPend(items);return;
+    }
+  }catch(e){console.error('initPend error:',e);}
+  
+  // fallback localStorage
+  const lastDate=ld('pend_date',null);let items=ld('pend_list',[]);
+  if(lastDate&&lastDate!==TODAY){
+    items=items.filter(i=>!i.done).map(i=>({...i,carryover:true,done:false}));
+    for(const it of items) await supaFetch('pendencias','POST',{data:TODAY,texto:it.text,done:false,carryover:true,recorrente:!!it.recorrente,rec_id:it.recId||null});
+    sv('pend_list',items);sv('pend_date',TODAY);
+  }else if(!lastDate)sv('pend_date',TODAY);
+  renderPend(items);
+}
+function renderPend(items){
+  const list=document.getElementById('pend-list');list.innerHTML='';
+  if(!items.length){list.innerHTML='<div class="empty-state">nenhuma pendência ainda</div>';updateProg();return;}
+  items.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.className='pend-item'+(item.done?' done':'');
+    div.draggable=true;div.dataset.idx=i;
+    // drag events
+    div.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',i);div.classList.add('dragging');});
+    div.addEventListener('dragend',()=>div.classList.remove('dragging'));
+    div.addEventListener('dragover',e=>{e.preventDefault();div.classList.add('drag-over');});
+    div.addEventListener('dragleave',()=>div.classList.remove('drag-over'));
+    div.addEventListener('drop',e=>{
+      e.preventDefault();div.classList.remove('drag-over');
+      const from=parseInt(e.dataTransfer.getData('text/plain'));
+      const to=parseInt(div.dataset.idx);if(from===to)return;
+      const its=ld('pend_list',[]);const[moved]=its.splice(from,1);its.splice(to,0,moved);
+      sv('pend_list',its);renderPend(its);
+    });
+    const chk=document.createElement('div');
+    chk.className='check-box';chk.style.cssText=item.done?'background:var(--accent);border-color:var(--accent);':'';
+    chk.innerHTML=item.done?CHK:'';chk.onclick=()=>togglePend(i);
+    const txt=document.createElement('span');
+    txt.className='pend-text';txt.textContent=item.text;
+    // dblclick to edit inline
+    txt.addEventListener('dblclick',()=>{
+      txt.contentEditable='true';txt.focus();
+      const range=document.createRange();range.selectNodeContents(txt);
+      const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+    });
+    txt.addEventListener('blur',()=>{
+      txt.contentEditable='false';
+      const its=ld('pend_list',[]);its[i].text=txt.textContent.trim()||its[i].text;
+      sv('pend_list',its);
+    });
+    txt.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();txt.blur();}});
+    div.appendChild(document.createElement('span')).className='drag-handle';
+    div.querySelector('.drag-handle').textContent='⠿';
+    div.appendChild(chk);div.appendChild(txt);
+    if(item.carryover){const c=document.createElement('span');c.className='pend-carry';c.textContent='↩';div.appendChild(c);}
+    if(item.recorrente){const r=document.createElement('span');r.className='pend-recorrente';r.textContent='↻ recorrente';div.appendChild(r);}
+    const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>delPend(i);
+    div.appendChild(del);
+    list.appendChild(div);
+  });
+  // hint
+  if(!list.querySelector('.edit-hint')){
+    const h=document.createElement('div');h.className='edit-hint';h.textContent='duplo clique para editar · ⠿ para reordenar';list.appendChild(h);
+  }
+  updateProg();
+}
+async function addPend(){
+  const input=document.getElementById('add-input');const text=input.value.trim();if(!text)return;input.value='';
+  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false});
+  const items=ld('pend_list',[]);
+  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false});
+  sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);
+}
+async function togglePend(i){
+  const items=ld('pend_list',[]);
+  const was=items[i].done;
+  items[i].done=!items[i].done;
+  sv('pend_list',items);
+  // atualiza no Supabase — se tem id usa PATCH, senão busca pelo texto+data
+  if(items[i].id){
+    await supaFetch('pendencias?id=eq.'+items[i].id,'PATCH',{done:items[i].done});
+  } else {
+    // tenta achar pelo texto e data
+    const rows=await supaFetch('pendencias?data=eq.'+TODAY+'&texto=eq.'+encodeURIComponent(items[i].text));
+    if(rows&&rows.length){
+      items[i].id=rows[0].id;sv('pend_list',items);
+      await supaFetch('pendencias?id=eq.'+rows[0].id,'PATCH',{done:items[i].done});
+    } else {
+      // cria se não existe
+      const row=await supaFetch('pendencias','POST',{data:TODAY,texto:items[i].text,done:items[i].done,carryover:!!items[i].carryover,recorrente:!!items[i].recorrente,rec_id:items[i].recId||null});
+      if(row&&row[0]) items[i].id=row[0].id;sv('pend_list',items);
+    }
+  }
+  if(!was){
+    const log=ld('hist_'+TODAY,[]);
+    const jaLogado=log.some(e=>e.texto==='✓ '+items[i].text&&e.tipo==='pendencia');
+    if(!jaLogado)logHist('✓ '+items[i].text,'pendencia');
+  }
+  renderPend(items);
+}
+async function delPend(i){
+  const items=ld('pend_list',[]);
+  if(items[i].id) await supaFetch('pendencias?id=eq.'+items[i].id,'DELETE');
+  items.splice(i,1);sv('pend_list',items);renderPend(items);
+}
+
+function sortPend(){
+  let items=ld('pend_list',[]);items.sort((a,b)=>a.done-b.done);sv('pend_list',items);renderPend(items);
+}
+
+// ── POMODORO ──
+const POMO={FOCO:25*60,PAUSA:5*60,LONGA:15*60};const CIRCUM=2*Math.PI*36;
+let ps={phase:'foco',secs:POMO.FOCO,running:false,ciclos:0,interval:null};
+function initPomo(){const s=ld('pomo_'+TODAY,null);if(s)ps.ciclos=s.ciclos||0;renderDots();document.getElementById('pomo-ciclo-count').textContent=ps.ciclos;}
+function renderDots(){const c=document.getElementById('pomo-dots');c.innerHTML='';for(let i=0;i<4;i++){const d=document.createElement('div');d.className='ciclo-dot'+(i<ps.ciclos%4?' done':i===ps.ciclos%4&&ps.phase==='foco'&&ps.secs<POMO.FOCO?' active':'');c.appendChild(d);}}
+function updatePomoDisplay(){
+  const m=Math.floor(ps.secs/60).toString().padStart(2,'0');const s=(ps.secs%60).toString().padStart(2,'0');
+  document.getElementById('pomo-time').textContent=m+':'+s;
+  const total=ps.phase==='foco'?POMO.FOCO:ps.phase==='pausa'?POMO.PAUSA:POMO.LONGA;
+  const fill=document.getElementById('pomo-ring-fill');
+  fill.style.strokeDashoffset=CIRCUM*(1-ps.secs/total);
+  fill.style.stroke=ps.phase==='foco'?'var(--accent)':ps.phase==='pausa'?'var(--blue)':'var(--amber)';
+  document.getElementById('pomo-phase-label').textContent={foco:'🍅 Foco — 25 min',pausa:'☕ Pausa curta — 5 min',longa:'🌿 Pausa longa — 15 min'}[ps.phase];
+}
+function togglePomo(){
+  if(ps.running){clearInterval(ps.interval);ps.running=false;document.getElementById('pomo-start-btn').textContent='retomar';}
+  else{
+    ps.running=true;document.getElementById('pomo-start-btn').textContent='pausar';
+    ps.interval=setInterval(()=>{
+      if(ps.secs>0){ps.secs--;updatePomoDisplay();renderDots();}
+      else{
+        clearInterval(ps.interval);ps.running=false;
+        if(ps.phase==='foco'){ps.ciclos++;document.getElementById('pomo-ciclo-count').textContent=ps.ciclos;sv('pomo_'+TODAY,{ciclos:ps.ciclos});ps.phase=ps.ciclos%4===0?'longa':'pausa';ps.secs=ps.phase==='longa'?POMO.LONGA:POMO.PAUSA;}
+        else{ps.phase='foco';ps.secs=POMO.FOCO;}
+        document.getElementById('pomo-start-btn').textContent='iniciar';updatePomoDisplay();renderDots();
+        try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.3,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);o.start(ctx.currentTime);o.stop(ctx.currentTime+0.8);}catch(e){}
+      }
+    },1000);
+  }
+}
+function resetPomo(){clearInterval(ps.interval);ps={...ps,phase:'foco',secs:POMO.FOCO,running:false,interval:null};document.getElementById('pomo-start-btn').textContent='iniciar';updatePomoDisplay();renderDots();}
+
+// ── MARCOS ──
+function toggleMarco(kr,idx){
+  const key='kr'+kr+'_marcos';const state=ld(key,new Array(10).fill(false));state[idx]=!state[idx];sv(key,state);
+  if(state[idx]){
+    const kr_def=KRS.find(k=>k.id===kr);
+    if(kr_def&&kr_def.marcos[idx]){
+      const log=ld('hist_'+TODAY,[]);
+      const txt='✓ [KR] '+kr_def.marcos[idx];
+      if(!log.some(e=>e.texto===txt))logHist(txt,'marco');
+    }
+  }
+  renderMarcos(kr,state);initCountdown();
+}
+function renderMarcos(kr,state){
+  const total=state.filter((_,i)=>document.getElementById('kr'+kr+'-m'+i)).length||state.length;
+  const done=state.slice(0,total).filter(Boolean).length;
+  const pct=total?Math.round((done/total)*100):0;
+  state.forEach((v,i)=>{
+    const item=document.querySelector(`.marco-item[data-kr="${kr}"][data-idx="${i}"]`);
+    const check=document.getElementById('kr'+kr+'-m'+i);if(!item||!check)return;
+    if(v){item.classList.add('done');check.classList.add('done');check.innerHTML='<svg width="9" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
+    else{item.classList.remove('done');check.classList.remove('done');check.innerHTML='';}
+  });
+  const fill=document.getElementById('kr'+kr+'-fill');const pctEl=document.getElementById('kr'+kr+'-pct');
+  if(fill){fill.style.width=pct+'%';fill.className='kr-progress-fill '+(pct<30?'fill-red':pct<70?'fill-amber':'fill-green');}
+  if(pctEl)pctEl.textContent=pct+'%';
+  const krs=ld('krs',{});krs['kr'+kr]=pct;sv('krs',krs);updateOKRProgress();
+  supaFetch('okr_progresso?kr_id=eq.'+kr,'PATCH',{progresso:pct,marcos:state}).then(r=>{
+    if(!r||!r.length) supaFetch('okr_progresso','POST',{kr_id:kr,progresso:pct,marcos:state});
+  });
+}
+function initMarcos(){
+  renderMarcos(1,ld('kr1_marcos',[false,false,false,false]));
+  renderMarcos(2,ld('kr2_marcos',new Array(14).fill(false)));
+  renderMarcos(4,ld('kr4_marcos',[false,false,false]));
+}
+
+// ── KRs ──
+function updateKR(n,v){
+  v=parseInt(v);document.getElementById('kr'+n+'-pct').textContent=v+'%';
+  const f=document.getElementById('kr'+n+'-fill');f.style.width=v+'%';f.className='kr-progress-fill '+(v<30?'fill-red':v<70?'fill-amber':'fill-green');
+  const krs=ld('krs',{});krs['kr'+n]=v;sv('krs',krs);updateOKRProgress();
+  supaFetch('okr_progresso?kr_id=eq.'+n,'PATCH',{progresso:v}).then(r=>{
+    if(!r||!r.length) supaFetch('okr_progresso','POST',{kr_id:n,progresso:v});
+  });
+}
+supaFetch('okr_progresso').then(rows=>{
+  if(!rows||!rows.length){
+    const krs=ld('krs',{});[3,5].forEach(n=>{const v=krs['kr'+n];const el=document.getElementById('kr'+n+'-range');if(v!==undefined&&el){el.value=v;updateKR(n,v);}});
+    return;
+  }
+  const krs=ld('krs',{});
+  rows.forEach(r=>{
+    krs['kr'+r.kr_id]=r.progresso;sv('krs',krs);
+    if(r.marcos){
+      const m=Array.isArray(r.marcos)?r.marcos:JSON.parse(r.marcos);
+      sv('kr'+r.kr_id+'_marcos',m);renderMarcos(r.kr_id,m);
+    }
+    const el=document.getElementById('kr'+r.kr_id+'-range');
+    if(el){el.value=r.progresso;updateKR(r.kr_id,r.progresso);}
+  });
+  updateOKRProgress();initCountdown();
+});
+
+// ── NOTAS DOS KRs ──
+function toggleKrNota(kr){
+  const wrap=document.getElementById('kr'+kr+'-nota-wrap');
+  const lbl=document.getElementById('kr'+kr+'-nota-lbl');
+  const isOpen=wrap.classList.contains('open');
+  wrap.classList.toggle('open');
+  const notas=ld('kr_notas_'+kr,[]);
+  lbl.textContent=isOpen?'notas'+(notas.length?' ('+notas.length+')':''):'fechar notas'+(notas.length?' ('+notas.length+')':'');
+  if(!isOpen) renderKrNotas(kr);
+}
+function renderKrNotas(kr){
+  const notas=ld('kr_notas_'+kr,[]);
+  const list=document.getElementById('kr'+kr+'-nota-list');
+  if(!list)return;
+  if(!notas.length){list.innerHTML='<div class="kr-nota-empty">nenhuma observação ainda</div>';return;}
+  list.innerHTML='';
+  notas.slice().reverse().forEach((n,revIdx)=>{
+    const origIdx=notas.length-1-revIdx;
+    const div=document.createElement('div');
+    div.className='kr-nota-entry';
+    div.innerHTML='<div class="kr-nota-entry-content"><div class="kr-nota-data">'+n.data+' às '+n.hora+'</div><div class="kr-nota-texto" id="kr-nota-txt-'+kr+'-'+origIdx+'">'+n.texto+'</div></div><div class="kr-nota-actions"><button class="kr-nota-action-btn" onclick="editKrNota('+kr+','+origIdx+')" title="editar">✎</button><button class="kr-nota-action-btn del" onclick="delKrNota('+kr+','+origIdx+')" title="excluir">×</button></div>';
+    const txt=div.querySelector('.kr-nota-texto');
+    txt.addEventListener('dblclick',()=>{txt.contentEditable='true';txt.focus();const r=document.createRange();r.selectNodeContents(txt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);});
+    txt.addEventListener('blur',()=>{txt.contentEditable='false';const ns=ld('kr_notas_'+kr,[]);const novo=txt.textContent.trim();if(novo&&novo!==ns[origIdx].texto){ns[origIdx].texto=novo;sv('kr_notas_'+kr,ns);}renderKrNotas(kr);});
+    txt.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();txt.blur();}});
+    list.appendChild(div);
+  });
+}
+async function addKrNota(kr){
+  const input=document.getElementById('kr'+kr+'-nota-input');
+  const texto=input.value.trim();if(!texto)return;input.value='';
+  const hoje=new Date();
+  const data=hoje.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  const hora=hoje.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const nota={texto,data,hora,id:Date.now()};
+  const notas=ld('kr_notas_'+kr,[]);notas.push(nota);sv('kr_notas_'+kr,notas);
+  await supaFetch('historico','POST',{data:hoje.toISOString().split('T')[0],texto:'[KR'+kr+'] '+texto,tipo:'nota_kr',hora});
+  renderKrNotas(kr);
+  const lbl=document.getElementById('kr'+kr+'-nota-lbl');
+  if(lbl) lbl.textContent='fechar notas ('+notas.length+')';
+}
+function editKrNota(kr,idx){
+  const txt=document.getElementById('kr-nota-txt-'+kr+'-'+idx);
+  if(!txt)return;
+  txt.contentEditable='true';txt.focus();
+  const r=document.createRange();r.selectNodeContents(txt);
+  const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+}
+function delKrNota(kr,idx){
+  const notas=ld('kr_notas_'+kr,[]);
+  notas.splice(idx,1);sv('kr_notas_'+kr,notas);
+  const lbl=document.getElementById('kr'+kr+'-nota-lbl');
+  if(lbl) lbl.textContent=notas.length?'notas ('+notas.length+')':'notas';
+  renderKrNotas(kr);
+}
+function initKrNotas(){
+  [1,4,2,5,3].forEach(kr=>{
+    const notas=ld('kr_notas_'+kr,[]);
+    const lbl=document.getElementById('kr'+kr+'-nota-lbl');
+    if(lbl&&notas.length) lbl.textContent='notas ('+notas.length+')';
+  });
+}
+
+// ── DIÁRIO DE ANOTAÇÕES ──
+async function initDiario(){
+  try{
+    const rows=await supaFetch('notas?aba=eq.diario_notas');
+    if(rows&&rows.length&&rows[0].conteudo){
+      const saved=JSON.parse(rows[0].conteudo);
+      if(saved&&saved.length){sv('diario_notas',saved);renderDiario();return;}
+    }
+  }catch(e){}
+  renderDiario();
+}
+function renderDiario(){
+  const notas=ld('diario_notas',[]);
+  const list=document.getElementById('diario-list');
+  if(!list)return;
+  if(!notas.length){list.innerHTML='<div class="empty-state">nenhuma anotação ainda</div>';return;}
+  list.innerHTML='';
+  notas.slice().reverse().forEach((n,revIdx)=>{
+    const origIdx=notas.length-1-revIdx;
+    const div=document.createElement('div');
+    div.className='diario-entry';
+    div.innerHTML='<div class="diario-entry-header"><span class="diario-entry-data">'+n.data+' às '+n.hora+'</span><button class="diario-entry-del" onclick="delDiario('+origIdx+')">×</button></div><div class="diario-entry-texto" id="diario-txt-'+origIdx+'">'+n.texto+'</div>';
+    const txt=div.querySelector('.diario-entry-texto');
+    txt.addEventListener('dblclick',()=>{
+      txt.contentEditable='true';txt.focus();
+      const r=document.createRange();r.selectNodeContents(txt);
+      const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+    });
+    txt.addEventListener('blur',()=>{
+      txt.contentEditable='false';
+      const ns=ld('diario_notas',[]);
+      const novo=txt.textContent.trim();
+      if(novo&&novo!==ns[origIdx].texto){
+        ns[origIdx].texto=novo;sv('diario_notas',ns);
+        saveDiarioSupabase(ns);
+      }
+      renderDiario();
+    });
+    txt.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();txt.blur();}});
+    list.appendChild(div);
+  });
+}
+function saveDiarioSupabase(notas){
+  supaFetch('notas?aba=eq.diario_notas','PATCH',{conteudo:JSON.stringify(notas),updated_at:new Date().toISOString()}).then(r=>{
+    if(!r||!r.length) supaFetch('notas','POST',{aba:'diario_notas',conteudo:JSON.stringify(notas)});
+  }).catch(()=>{});
+}
+async function addDiario(){
+  const input=document.getElementById('diario-input');
+  const texto=input.value.trim();if(!texto)return;input.value='';
+  const hoje=new Date();
+  const data=hoje.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  const hora=hoje.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const notas=ld('diario_notas',[]);
+  notas.push({texto,data,hora,id:Date.now()});
+  sv('diario_notas',notas);
+  saveDiarioSupabase(notas);
+  renderDiario();
+}
+function delDiario(idx){
+  const notas=ld('diario_notas',[]);
+  notas.splice(idx,1);
+  sv('diario_notas',notas);
+  saveDiarioSupabase(notas);
+  renderDiario();
+}
+
+// ── RECORRÊNCIAS ──
+function isUltimoDiaUtil(data){
+  const ultimo=new Date(data.getFullYear(),data.getMonth()+1,0);
+  while(ultimo.getDay()===0||ultimo.getDay()===6) ultimo.setDate(ultimo.getDate()-1);
+  return data.getDate()===ultimo.getDate()&&data.getMonth()===ultimo.getMonth();
+}
+function isPrimeiroDiaUtil(data){
+  const primeiro=new Date(data.getFullYear(),data.getMonth(),1);
+  while(primeiro.getDay()===0||primeiro.getDay()===6) primeiro.setDate(primeiro.getDate()+1);
+  return data.getDate()===primeiro.getDate()&&data.getMonth()===primeiro.getMonth();
+}
+const RECORRENCIAS=[
+  {id:'rec_ultimo_util',texto:'Emissão de nota fiscal Performance',check:isUltimoDiaUtil},
+  {id:'rec_primeiro_util',texto:'Fechamento contabilidade',check:isPrimeiroDiaUtil},
+  {id:'rec_dia26',texto:'Fechamento cartão de crédito',check:(d)=>d.getDate()===26},
+];
+async function initRecorrencias(){
+  const hoje=new Date();
+  const items=ld('pend_list',[]);
+  let changed=false;
+  for(const r of RECORRENCIAS){
+    if(!r.check(hoje)) continue;
+    const jaExiste=items.some(i=>i.recId===r.id);
+    if(!jaExiste){
+      const row=await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:false,recorrente:true,rec_id:r.id});
+      const id=row&&row[0]?row[0].id:null;
+      items.push({id,text:r.texto,done:false,carryover:false,recorrente:true,recId:r.id});
+      changed=true;
+    }
+  }
+  if(changed){sv('pend_list',items);sv('pend_date',TODAY);}
+}
+
+// ── INIT ──
+initAlertas();
+initCountdown();
+initKrNotas();
+initDiario();
+initMarcos();
+updateOKRProgress();
+initRoutines();
+initRecorrencias();
+initPend();
+initPomo();
+updatePomoDisplay();
+</script>
+</body>
+</html>
