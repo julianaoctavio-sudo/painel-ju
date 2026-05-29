@@ -428,6 +428,9 @@ const now=new Date();
 const TODAY=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
 document.getElementById('date-display').textContent=DAYS[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()]+' '+now.getFullYear();
 
+// parse date locally (avoid UTC offset issues)
+function parseLocalDate(str){const[y,m,d]=str.split('-').map(Number);const dt=new Date(y,m-1,d);dt.setHours(0,0,0,0);return dt;}
+
 // semana do ciclo (25/05 → 30/08)
 const CICLO_START=parseLocalDate('2026-05-25');
 const semanaNum=Math.max(1,Math.ceil(((now-CICLO_START)/(1000*60*60*24*7))+1));
@@ -449,7 +452,6 @@ async function supaFetch(path,method='GET',body=null){
 function ld(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
 function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 // parse date string as local date (avoids UTC offset issues)
-function parseLocalDate(str){const[y,m,d]=str.split('-').map(Number);const dt=new Date(y,m-1,d);dt.setHours(0,0,0,0);return dt;}
 
 // ── HISTÓRICO (Supabase only) ──
 function logHist(texto, tipo){
