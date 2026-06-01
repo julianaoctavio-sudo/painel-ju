@@ -109,6 +109,12 @@
   .add-input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;padding:3px 0;}
   .add-input::placeholder{color:var(--border);}
   .add-btn{background:var(--accent);color:#fff;border:none;border-radius:3px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;}
+  .pend-prio-sel{background:var(--bg);border:1px solid var(--border);border-radius:3px;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);padding:3px 4px;cursor:pointer;outline:none;flex-shrink:0;}
+  .pend-cat{font-size:10px;padding:1px 7px;border-radius:20px;white-space:nowrap;align-self:center;flex-shrink:0;}
+  .cat-financeiro{background:#FDF0E0;color:#B5600A;}
+  .cat-analise{background:#E3EDF8;color:#1A4A7A;}
+  .cat-compras{background:#EDE6FA;color:#6B4FA0;}
+  .cat-administrativo{background:#EAE6DE;color:#7A7368;}
   .carry-hint{font-size:10px;color:var(--muted);margin-top:6px;}
   .empty-state{font-size:11px;color:var(--muted);padding:8px 0;text-align:center;}
 
@@ -268,6 +274,12 @@
     </div>
     <div id="pend-list"></div>
     <div class="add-row">
+      <select class="pend-prio-sel" id="pend-prio">
+        <option value="financeiro">💰 Financeiro</option>
+        <option value="analise">📊 Análise</option>
+        <option value="compras">📦 Compras</option>
+        <option value="administrativo" selected>📋 Administrativo</option>
+      </select>
       <input class="add-input" id="add-input" type="text" placeholder="+ adicionar pendência..." onkeydown="if(event.key==='Enter')addPend()">
       <button class="add-btn" onclick="addPend()">adicionar</button>
     </div>
@@ -389,9 +401,15 @@
     <div class="kr-item">
       <div class="kr-header"><span class="kr-priority p2">P2</span><div class="kr-text">Definir 8 datas de pagamento e renegociar 60% dos fornecedores</div><span class="kr-badge badge-amber">31 jul</span></div>
       <div class="kr-prazo">prazo: 31 jul · alta dependência de terceiros</div>
-      <input type="range" class="progress-input" id="kr5-range" min="0" max="100" value="0" step="1" oninput="updateKR(5,this.value)">
-      <div class="kr-progress-bar"><div class="kr-progress-fill fill-amber" id="kr5-fill" style="width:0%"></div></div>
-      <div class="kr-progress-label"><span>0%</span><span id="kr5-pct">0%</span></div>
+      <div class="kr-marcos" id="kr5-marcos">
+        <div class="marco-item" data-kr="5" data-idx="0" onclick="toggleMarco(5,0)"><div class="marco-check" id="kr5-m0"></div><span class="marco-text">Mapear todos os fornecedores ativos com datas e valores</span><span class="marco-prazo">etapa 1</span></div>
+        <div class="marco-item" data-kr="5" data-idx="1" onclick="toggleMarco(5,1)"><div class="marco-check" id="kr5-m1"></div><span class="marco-text">Montar planilha com dados de pagamento</span><span class="marco-prazo">etapa 2</span></div>
+        <div class="marco-item" data-kr="5" data-idx="2" onclick="toggleMarco(5,2)"><div class="marco-check" id="kr5-m2"></div><span class="marco-text">Contato com fornecedores (e-mail ou telefone)</span><span class="marco-prazo">etapa 3</span></div>
+        <div class="marco-item" data-kr="5" data-idx="3" onclick="toggleMarco(5,3)"><div class="marco-check" id="kr5-m3"></div><span class="marco-text">Renegociar datas — meta: 60% concluídos</span><span class="marco-prazo">etapa 4</span></div>
+        <div class="marco-item" data-kr="5" data-idx="4" onclick="toggleMarco(5,4)"><div class="marco-check" id="kr5-m4"></div><span class="marco-text">Atualizar datas no sistema Nibo</span><span class="marco-prazo">etapa 5</span></div>
+      </div>
+      <div class="kr-progress-bar" style="margin-top:10px"><div class="kr-progress-fill fill-amber" id="kr5-fill" style="width:0%"></div></div>
+      <div class="kr-progress-label"><span>marcos concluídos</span><span id="kr5-pct">0%</span></div>
       <button class="kr-nota-toggle" onclick="toggleKrNota(5)">📝 <span id="kr5-nota-lbl">notas</span></button>
       <div class="kr-nota-wrap" id="kr5-nota-wrap">
         <div class="kr-nota-list" id="kr5-nota-list"></div>
@@ -403,15 +421,18 @@
     </div>
     <div class="kr-item">
       <div class="kr-header"><span class="kr-priority p3">P3</span><div class="kr-text">Entregar planilha automatizada DFC e DRE de agosto (orçado vs realizado)</div><span class="kr-badge badge-amber">30 ago</span></div>
-      <div class="kr-prazo">prazo: 30 ago · baixa dependência · alta dificuldade</div>
-      <input type="range" class="progress-input" id="kr3-range" min="0" max="100" value="10" step="1" oninput="updateKR(3,this.value)">
-      <div class="kr-progress-bar"><div class="kr-progress-fill fill-amber" id="kr3-fill" style="width:10%"></div></div>
-      <div class="kr-progress-label"><span>0%</span><span id="kr3-pct">10%</span></div>
-      <button class="kr-nota-toggle" onclick="toggleKrNota(3)">📝 <span id="kr3-nota-lbl">notas</span></button>
+      <div class="kr-prazo">prazo: 30 ago · trabalho contínuo · atualiza o progresso conforme avança</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+        <span style="font-size:10px;color:var(--muted);white-space:nowrap;">% concluído</span>
+        <input type="range" class="progress-input" id="kr3-range" min="0" max="100" value="10" step="5" oninput="updateKR(3,this.value)" style="flex:1;margin-top:0;">
+        <span id="kr3-pct" style="font-size:12px;font-weight:500;min-width:32px;text-align:right;">10%</span>
+      </div>
+      <div class="kr-progress-bar" style="margin-top:6px"><div class="kr-progress-fill fill-amber" id="kr3-fill" style="width:10%"></div></div>
+      <button class="kr-nota-toggle" onclick="toggleKrNota(3)">📝 <span id="kr3-nota-lbl">notas — registre seu avanço aqui</span></button>
       <div class="kr-nota-wrap" id="kr3-nota-wrap">
         <div class="kr-nota-list" id="kr3-nota-list"></div>
         <div class="kr-nota-add">
-          <input class="kr-nota-input" id="kr3-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(3)">
+          <input class="kr-nota-input" id="kr3-nota-input" placeholder="Ex: Finalizei estrutura base das abas, falta automação das fórmulas..." onkeydown="if(event.key==='Enter')addKrNota(3)">
           <button class="kr-nota-btn" onclick="addKrNota(3)">salvar</button>
         </div>
       </div>
@@ -496,7 +517,7 @@ const KRS=[
    marcos:['1ª apresentação (jun)','2ª apresentação (jul)','3ª apresentação (ago)'],
    marcosPrazos:['2026-06-10','2026-07-10','2026-08-10']},
   {id:2,label:'Projeção DFC e DRE semanal ao líder',prazo:'2026-08-27',p:'p2',marcos:['Apresentação 1 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 2 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 3 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 4 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 5 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 6 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 7 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 8 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 9 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 10 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 11 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 12 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 13 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 14 — DFC/DRE, variação orçado x realizado, riscos e plano de ação'],marcosPrazos:['2026-05-28', '2026-06-04', '2026-06-11', '2026-06-18', '2026-06-25', '2026-07-02', '2026-07-09', '2026-07-16', '2026-07-23', '2026-07-30', '2026-08-06', '2026-08-13', '2026-08-20', '2026-08-27']},
-  {id:5,label:'Renegociar 60% fornecedores',prazo:'2026-07-31',p:'p2',marcos:[],marcosPrazos:[]},
+  {id:5,label:'Renegociar 60% fornecedores',prazo:'2026-07-31',p:'p2',marcos:['Mapear fornecedores ativos','Montar planilha de pagamento','Contato com fornecedores','Renegociar datas (meta: 60%)','Atualizar datas no Nibo'],marcosPrazos:['2026-07-31','2026-07-31','2026-07-31','2026-07-31','2026-07-31']},
   {id:3,label:'Planilha automatizada DFC/DRE agosto',prazo:'2026-08-30',p:'p3',marcos:[],marcosPrazos:[]},
 ];
 function initAlertas(){
@@ -749,7 +770,7 @@ async function initPend(){
     }
 
     if(rows!==null){
-      const items=rows.map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
+      const items=rows.map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id,prio:r.recorrente?'administrativo':(r.rec_id&&['financeiro','analise','compras','administrativo'].includes(r.rec_id)?r.rec_id:'administrativo')}));
       sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);return;
     }
   }catch(e){console.error('initPend error:',e);}
@@ -816,9 +837,10 @@ function renderPend(items){
 }
 async function addPend(){
   const input=document.getElementById('add-input');const text=input.value.trim();if(!text)return;input.value='';
-  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false});
+  const prio=document.getElementById('pend-prio')?.value||'p2';
+  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false,rec_id:prio});
   const items=ld('pend_list',[]);
-  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false});
+  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false,prio});
   sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);
 }
 async function togglePend(i){
@@ -925,6 +947,7 @@ function initMarcos(){
   renderMarcos(1,ld('kr1_marcos',[false,false,false,false]));
   renderMarcos(2,ld('kr2_marcos',new Array(14).fill(false)));
   renderMarcos(4,ld('kr4_marcos',[false,false,false]));
+  renderMarcos(5,ld('kr5_marcos',[false,false,false,false,false]));
 }
 
 // ── KRs ──
@@ -938,7 +961,7 @@ function updateKR(n,v){
 }
 supaFetch('okr_progresso').then(rows=>{
   if(!rows||!rows.length){
-    const krs=ld('krs',{});[3,5].forEach(n=>{const v=krs['kr'+n];const el=document.getElementById('kr'+n+'-range');if(v!==undefined&&el){el.value=v;updateKR(n,v);}});
+    const krs=ld('krs',{});[3].forEach(n=>{const v=krs['kr'+n];const el=document.getElementById('kr'+n+'-range');if(v!==undefined&&el){el.value=v;updateKR(n,v);}});
     return;
   }
   const krs=ld('krs',{});
@@ -1098,6 +1121,7 @@ function isPrimeiroDiaUtil(data){
 const RECORRENCIAS=[
   {id:'rec_ultimo_util',texto:'Emissão de nota fiscal Performance',check:isUltimoDiaUtil},
   {id:'rec_primeiro_util',texto:'Fechamento contabilidade',check:isPrimeiroDiaUtil},
+  {id:'rec_comissao',texto:'Conferência Comissão Comercial',check:isPrimeiroDiaUtil},
   {id:'rec_dia26',texto:'Fechamento cartão de crédito',check:(d)=>d.getDate()===26},
 ];
 async function initRecorrencias(){
