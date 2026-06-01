@@ -109,12 +109,7 @@
   .add-input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;padding:3px 0;}
   .add-input::placeholder{color:var(--border);}
   .add-btn{background:var(--accent);color:#fff;border:none;border-radius:3px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;}
-  .pend-prio-sel{background:var(--bg);border:1px solid var(--border);border-radius:3px;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);padding:3px 4px;cursor:pointer;outline:none;flex-shrink:0;}
-  .pend-cat{font-size:10px;padding:1px 7px;border-radius:20px;white-space:nowrap;align-self:center;flex-shrink:0;}
-  .cat-financeiro{background:#FDF0E0;color:#B5600A;}
-  .cat-analise{background:#E3EDF8;color:#1A4A7A;}
-  .cat-compras{background:#EDE6FA;color:#6B4FA0;}
-  .cat-administrativo{background:#EAE6DE;color:#7A7368;}
+
   .carry-hint{font-size:10px;color:var(--muted);margin-top:6px;}
   .empty-state{font-size:11px;color:var(--muted);padding:8px 0;text-align:center;}
 
@@ -274,12 +269,6 @@
     </div>
     <div id="pend-list"></div>
     <div class="add-row">
-      <select class="pend-prio-sel" id="pend-prio">
-        <option value="financeiro">💰 Financeiro</option>
-        <option value="analise">📊 Análise</option>
-        <option value="compras">📦 Compras</option>
-        <option value="administrativo" selected>📋 Administrativo</option>
-      </select>
       <input class="add-input" id="add-input" type="text" placeholder="+ adicionar pendência..." onkeydown="if(event.key==='Enter')addPend()">
       <button class="add-btn" onclick="addPend()">adicionar</button>
     </div>
@@ -837,10 +826,9 @@ function renderPend(items){
 }
 async function addPend(){
   const input=document.getElementById('add-input');const text=input.value.trim();if(!text)return;input.value='';
-  const prio=document.getElementById('pend-prio')?.value||'p2';
-  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false,rec_id:prio});
+  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false});
   const items=ld('pend_list',[]);
-  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false,prio});
+  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false});
   sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);
 }
 async function togglePend(i){
