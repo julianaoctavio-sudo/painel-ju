@@ -1104,12 +1104,28 @@ function isPrimeiroDiaUtil(data){
   while(primeiro.getDay()===0||primeiro.getDay()===6) primeiro.setDate(primeiro.getDate()+1);
   return data.getDate()===primeiro.getDate()&&data.getMonth()===primeiro.getMonth();
 }
+function isDoisDiasUteisAntesFim(data){
+  // acha o último dia útil do mês
+  const ultimo=new Date(data.getFullYear(),data.getMonth()+1,0);
+  while(ultimo.getDay()===0||ultimo.getDay()===6) ultimo.setDate(ultimo.getDate()-1);
+  // volta 1 dia útil
+  const penultimo=new Date(ultimo);
+  penultimo.setDate(penultimo.getDate()-1);
+  while(penultimo.getDay()===0||penultimo.getDay()===6) penultimo.setDate(penultimo.getDate()-1);
+  // volta mais 1 dia útil (2 dias antes)
+  const antepenultimo=new Date(penultimo);
+  antepenultimo.setDate(antepenultimo.getDate()-1);
+  while(antepenultimo.getDay()===0||antepenultimo.getDay()===6) antepenultimo.setDate(antepenultimo.getDate()-1);
+  return data.getDate()===antepenultimo.getDate()&&data.getMonth()===antepenultimo.getMonth();
+}
 const RECORRENCIAS=[
   {id:'rec_ultimo_util',texto:'Emissão de nota fiscal Performance',check:isUltimoDiaUtil},
   {id:'rec_primeiro_util',texto:'Fechamento contabilidade',check:isPrimeiroDiaUtil},
   {id:'rec_comissao',texto:'Conferência Comissão Comercial',check:isPrimeiroDiaUtil},
   {id:'rec_contas_receber',texto:'Tirar contas a receber',check:isPrimeiroDiaUtil},
   {id:'rec_folha',texto:'Conferência de folha',check:isPrimeiroDiaUtil},
+  {id:'rec_reembolso',texto:'Cobrar reembolso',check:isDoisDiasUteisAntesFim},
+  {id:'rec_dia25',texto:'Conferência diarista',check:(d)=>d.getDate()===25},
   {id:'rec_dia26',texto:'Fechamento cartão de crédito',check:(d)=>d.getDate()===26},
 ];
 async function initRecorrencias(){
