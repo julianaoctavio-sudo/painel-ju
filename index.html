@@ -735,40 +735,38 @@ function delRotina(id){
 // ── PENDÊNCIAS ──
 async function initPend(){
   try{
-    // 1. busca só pendências de hoje
-    const rows=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
-    
-    if(rows!==null&&rows.length===0){
-      // hoje está vazio — verifica se tem pendências de ontem não concluídas pra fazer carryover
-      const ontem=await supaFetch('pendencias?data=not.like.arquivado_%&done=eq.false&data=neq.'+TODAY+'&order=id.asc&limit=50');
-      if(ontem&&ontem.length){
-        const textosMigrados=[];
-        for(const r of ontem){
-          // evita duplicar mesmo texto
-          if(textosMigrados.includes(r.texto)) continue;
-          textosMigrados.push(r.texto);
-          await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:true,recorrente:r.recorrente,rec_id:r.rec_id});
-          // arquiva o original
+    // 1. sempre verifica pendências de dias anteriores não concluídas
+    const anteriores=await supaFetch('pendencias?done=eq.false&data=neq.'+TODAY+'&data=not.like.arquivado_%&order=id.asc&limit=100');
+    if(anteriores&&anteriores.length){
+      const textosMigrados=[];
+      // busca textos que já existem hoje pra não duplicar
+      const hoje=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
+      const textosHoje=(hoje||[]).map(r=>r.texto);
+      for(const r of anteriores){
+        if(textosMigrados.includes(r.texto)||textosHoje.includes(r.texto)){
+          // só arquiva sem migrar se já existe hoje
           await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:'arquivado_'+r.data});
+          continue;
         }
-        // recarrega hoje
-        const rowsNovos=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
-        const items=(rowsNovos||[]).map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
-        sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);return;
+        textosMigrados.push(r.texto);
+        await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:true,recorrente:false,rec_id:null});
+        await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:'arquivado_'+r.data});
       }
     }
 
+    // 2. carrega pendências de hoje (após carryover)
+    const rows=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
     if(rows!==null){
-      const items=rows.map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id,prio:r.recorrente?'administrativo':(r.rec_id&&['financeiro','analise','compras','administrativo'].includes(r.rec_id)?r.rec_id:'administrativo')}));
+      const items=rows.map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
       sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);return;
     }
   }catch(e){console.error('initPend error:',e);}
-  
+
   // fallback localStorage
   const lastDate=ld('pend_date',null);let items=ld('pend_list',[]);
   if(lastDate&&lastDate!==TODAY){
     items=items.filter(i=>!i.done).map(i=>({...i,carryover:true,done:false}));
-    for(const it of items) await supaFetch('pendencias','POST',{data:TODAY,texto:it.text,done:false,carryover:true,recorrente:!!it.recorrente,rec_id:it.recId||null});
+    for(const it of items) await supaFetch('pendencias','POST',{data:TODAY,texto:it.text,done:false,carryover:true,recorrente:false,rec_id:null});
     sv('pend_list',items);sv('pend_date',TODAY);
   }else if(!lastDate)sv('pend_date',TODAY);
   renderPend(items);
@@ -1106,10 +1104,28 @@ function isPrimeiroDiaUtil(data){
   while(primeiro.getDay()===0||primeiro.getDay()===6) primeiro.setDate(primeiro.getDate()+1);
   return data.getDate()===primeiro.getDate()&&data.getMonth()===primeiro.getMonth();
 }
+function isDoisDiasUteisAntesFim(data){
+  // acha o último dia útil do mês
+  const ultimo=new Date(data.getFullYear(),data.getMonth()+1,0);
+  while(ultimo.getDay()===0||ultimo.getDay()===6) ultimo.setDate(ultimo.getDate()-1);
+  // volta 1 dia útil
+  const penultimo=new Date(ultimo);
+  penultimo.setDate(penultimo.getDate()-1);
+  while(penultimo.getDay()===0||penultimo.getDay()===6) penultimo.setDate(penultimo.getDate()-1);
+  // volta mais 1 dia útil (2 dias antes)
+  const antepenultimo=new Date(penultimo);
+  antepenultimo.setDate(antepenultimo.getDate()-1);
+  while(antepenultimo.getDay()===0||antepenultimo.getDay()===6) antepenultimo.setDate(antepenultimo.getDate()-1);
+  return data.getDate()===antepenultimo.getDate()&&data.getMonth()===antepenultimo.getMonth();
+}
 const RECORRENCIAS=[
   {id:'rec_ultimo_util',texto:'Emissão de nota fiscal Performance',check:isUltimoDiaUtil},
   {id:'rec_primeiro_util',texto:'Fechamento contabilidade',check:isPrimeiroDiaUtil},
   {id:'rec_comissao',texto:'Conferência Comissão Comercial',check:isPrimeiroDiaUtil},
+  {id:'rec_contas_receber',texto:'Tirar contas a receber',check:isPrimeiroDiaUtil},
+  {id:'rec_folha',texto:'Conferência de folha',check:isPrimeiroDiaUtil},
+  {id:'rec_reembolso',texto:'Cobrar reembolso',check:isDoisDiasUteisAntesFim},
+  {id:'rec_dia25',texto:'Conferência diarista',check:(d)=>d.getDate()===25},
   {id:'rec_dia26',texto:'Fechamento cartão de crédito',check:(d)=>d.getDate()===26},
 ];
 async function initRecorrencias(){
