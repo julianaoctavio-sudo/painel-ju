@@ -735,32 +735,16 @@ function delRotina(id){
 // ── PENDÊNCIAS ──
 async function initPend(){
   try{
-    // 1. busca TODAS pendências não concluídas que não são de hoje
-    // usa lt (less than) pra pegar só datas anteriores a hoje — evita problema com filtro LIKE
+    // 1. traz todas pendências não concluídas de dias anteriores para hoje
     const anteriores=await supaFetch('pendencias?done=eq.false&data=lt.'+TODAY+'&order=id.asc&limit=100');
-    
     if(anteriores&&anteriores.length){
-      // busca o que já existe hoje pra não duplicar
-      const hoje=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
-      const textosHoje=new Set((hoje||[]).map(r=>r.texto));
-      const textosMigrados=new Set();
-      
       for(const r of anteriores){
-        // arquiva o original independente
-        await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:'arquivado_'+r.data});
-        
-        // só migra se não existe hoje com mesmo texto
-        if(!textosHoje.has(r.texto)&&!textosMigrados.has(r.texto)){
-          textosMigrados.add(r.texto);
-          await supaFetch('pendencias','POST',{
-            data:TODAY,texto:r.texto,done:false,
-            carryover:true,recorrente:false,rec_id:null
-          });
-        }
+        // atualiza a data para hoje — mesma pendência, novo dia
+        await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:TODAY,carryover:true});
       }
     }
 
-    // 2. carrega pendências de hoje
+    // 2. carrega todas pendências de hoje
     const rows=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
     if(rows!==null){
       const items=rows.map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
