@@ -451,12 +451,22 @@ const SUPA_URL='https://jftzmonfswdjchrclvmq.supabase.co';
 const SUPA_KEY='sb_publishable_Ti0pBfSREN-mJnf1XKrkhg_8BDexZoH';
 async function supaFetch(path,method='GET',body=null){
   try{
-    const opts={method,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'}};
+    const opts={method,headers:{
+      'apikey':SUPA_KEY,
+      'Authorization':'Bearer '+SUPA_KEY,
+      'Content-Type':'application/json',
+      'Prefer':'return=representation',
+      'Range':'0-999'  // busca até 1000 registros
+    }};
     if(body)opts.body=JSON.stringify(body);
     const res=await fetch(SUPA_URL+'/rest/v1/'+path,opts);
-    if(!res.ok)return null;
-    const txt=await res.text();return txt?JSON.parse(txt):null;
-  }catch(e){return null;}
+    if(!res.ok){
+      const err=await res.text();
+      console.error('supaFetch error',method,path,res.status,err);
+      return null;
+    }
+    const txt=await res.text();return txt?JSON.parse(txt):[];
+  }catch(e){console.error('supaFetch exception:',e);return null;}
 }
 
 function ld(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
@@ -735,38 +745,36 @@ function delRotina(id){
 // ── PENDÊNCIAS ──
 async function initPend(){
   try{
-    // 1. sempre verifica pendências de dias anteriores não concluídas
-    const anteriores=await supaFetch('pendencias?done=eq.false&data=neq.'+TODAY+'&data=not.like.arquivado_%&order=id.asc&limit=100');
-    if(anteriores&&anteriores.length){
-      const textosMigrados=[];
-      // busca textos que já existem hoje pra não duplicar
-      const hoje=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
-      const textosHoje=(hoje||[]).map(r=>r.texto);
-      for(const r of anteriores){
-        if(textosMigrados.includes(r.texto)||textosHoje.includes(r.texto)){
-          // só arquiva sem migrar se já existe hoje
-          await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:'arquivado_'+r.data});
-          continue;
-        }
-        textosMigrados.push(r.texto);
-        await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:true,recorrente:false,rec_id:null});
-        await supaFetch('pendencias?id=eq.'+r.id,'PATCH',{data:'arquivado_'+r.data});
-      }
+    // busca não concluídas de qualquer data
+    const naoFeitas=await supaFetch('pendencias?done=eq.false&order=id.asc');
+    // busca concluídas só de hoje
+    const feitasHoje=await supaFetch('pendencias?done=eq.true&data=eq.'+TODAY+'&order=id.asc');
+    
+    if(naoFeitas===null&&feitasHoje===null){
+      throw new Error('Supabase retornou null');
     }
 
-    // 2. carrega pendências de hoje (após carryover)
-    const rows=await supaFetch('pendencias?data=eq.'+TODAY+'&order=id.asc');
-    if(rows!==null){
-      const items=rows.map(r=>({id:r.id,text:r.texto,done:r.done,carryover:r.carryover,recorrente:r.recorrente,recId:r.rec_id}));
-      sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);return;
-    }
-  }catch(e){console.error('initPend error:',e);}
+    const items=[
+      ...(naoFeitas||[]).map(r=>({
+        id:r.id,text:r.texto,done:false,
+        carryover:r.data!==TODAY,
+        recorrente:r.recorrente,recId:r.rec_id
+      })),
+      ...(feitasHoje||[]).map(r=>({
+        id:r.id,text:r.texto,done:true,
+        carryover:false,recorrente:r.recorrente,recId:r.rec_id
+      }))
+    ];
+    sv('pend_list',items);sv('pend_date',TODAY);
+    renderPend(items);return;
+  }catch(e){
+    console.error('initPend error:',e);
+  }
 
   // fallback localStorage
   const lastDate=ld('pend_date',null);let items=ld('pend_list',[]);
   if(lastDate&&lastDate!==TODAY){
     items=items.filter(i=>!i.done).map(i=>({...i,carryover:true,done:false}));
-    for(const it of items) await supaFetch('pendencias','POST',{data:TODAY,texto:it.text,done:false,carryover:true,recorrente:false,rec_id:null});
     sv('pend_list',items);sv('pend_date',TODAY);
   }else if(!lastDate)sv('pend_date',TODAY);
   renderPend(items);
