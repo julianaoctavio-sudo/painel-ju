@@ -809,10 +809,13 @@ function renderPend(items){
       const range=document.createRange();range.selectNodeContents(txt);
       const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
     });
-    txt.addEventListener('blur',()=>{
+    txt.addEventListener('blur',async()=>{
       txt.contentEditable='false';
-      const its=ld('pend_list',[]);its[i].text=txt.textContent.trim()||its[i].text;
-      sv('pend_list',its);
+      const novo=txt.textContent.trim();
+      if(!novo||novo===item.text) return;
+      const its=ld('pend_list',[]);its[i].text=novo;sv('pend_list',its);
+      // salva no Supabase
+      if(item.id) await supaFetch('pendencias?id=eq.'+item.id,'PATCH',{texto:novo});
     });
     txt.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();txt.blur();}});
     div.appendChild(document.createElement('span')).className='drag-handle';
