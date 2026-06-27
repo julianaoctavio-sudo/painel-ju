@@ -1141,19 +1141,17 @@ const RECORRENCIAS=[
 ];
 async function initRecorrencias(){
   const hoje=new Date();
-  const items=ld('pend_list',[]);
-  let changed=false;
   for(const r of RECORRENCIAS){
     if(!r.check(hoje)) continue;
-    const jaExiste=items.some(i=>i.recId===r.id);
-    if(!jaExiste){
-      const row=await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:false,recorrente:true,rec_id:r.id});
-      const id=row&&row[0]?row[0].id:null;
-      items.push({id,text:r.texto,done:false,carryover:false,recorrente:true,recId:r.id});
-      changed=true;
-    }
+    // verifica no Supabase se já existe hoje com esse rec_id
+    const jaExiste=await supaFetch('pendencias?data=eq.'+TODAY+'&rec_id=eq.'+r.id+'&limit=1');
+    if(jaExiste&&jaExiste.length>0) continue;
+    // também verifica se já existe com esse texto hoje (evita duplicata por texto)
+    const jaExisteTexto=await supaFetch('pendencias?data=eq.'+TODAY+'&texto=eq.'+encodeURIComponent(r.texto)+'&limit=1');
+    if(jaExisteTexto&&jaExisteTexto.length>0) continue;
+    // cria no Supabase
+    await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:false,recorrente:true,rec_id:r.id});
   }
-  if(changed){sv('pend_list',items);sv('pend_date',TODAY);}
 }
 
 // ── INIT ──
