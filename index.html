@@ -150,6 +150,22 @@
   .diario-add-area::placeholder{color:var(--border);}
   .diario-add-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
   .diario-hint{font-size:9px;color:var(--muted);}
+
+  /* ETIQUETAS PENDÊNCIAS */
+  .pend-tags{display:flex;gap:4px;flex-wrap:wrap;align-self:center;flex-shrink:0;}
+  .etiqueta{font-size:9px;padding:1px 7px;border-radius:20px;white-space:nowrap;font-weight:500;}
+  .etiqueta-jessica{background:#FFE0F0;color:#C2185B;}
+  .etiqueta-juliana{background:#EDE6FA;color:#6B4FA0;}
+  .etiqueta-alta{background:#FDEAE6;color:#B5290A;}
+  .etiqueta-media{background:#FDF0E0;color:#B5600A;}
+  .etiqueta-baixa{background:#D8EDE4;color:#2D6A4F;}
+  .tag-selectors{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+  .tag-toggle{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:'DM Mono',monospace;color:var(--muted);transition:all 0.15s;}
+  .tag-toggle.selected-jessica{background:#FFE0F0;border-color:#C2185B;color:#C2185B;}
+  .tag-toggle.selected-juliana{background:#EDE6FA;border-color:#6B4FA0;color:#6B4FA0;}
+  .tag-toggle.selected-alta{background:#FDEAE6;border-color:#B5290A;color:#B5290A;}
+  .tag-toggle.selected-media{background:#FDF0E0;border-color:#B5600A;color:#B5600A;}
+  .tag-toggle.selected-baixa{background:#D8EDE4;border-color:#2D6A4F;color:#2D6A4F;}
   /* POMODORO */
   .pomo-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 22px;display:flex;align-items:center;gap:22px;}
   .pomo-left{flex:1;}
@@ -271,6 +287,14 @@
     <div class="add-row">
       <input class="add-input" id="add-input" type="text" placeholder="+ adicionar pendência..." onkeydown="if(event.key==='Enter')addPend()">
       <button class="add-btn" onclick="addPend()">adicionar</button>
+    </div>
+    <div class="tag-selectors">
+      <button class="tag-toggle" id="tag-jessica" onclick="toggleTag('jessica')">🩷 Jéssica</button>
+      <button class="tag-toggle" id="tag-juliana" onclick="toggleTag('juliana')">🟣 Juliana</button>
+      <span style="width:1px;background:var(--border);margin:0 2px;"></span>
+      <button class="tag-toggle" id="tag-alta" onclick="toggleTag('alta')">🔴 Alta</button>
+      <button class="tag-toggle" id="tag-media" onclick="toggleTag('media')">🟡 Média</button>
+      <button class="tag-toggle" id="tag-baixa" onclick="toggleTag('baixa')">🟢 Baixa</button>
     </div>
     <div class="carry-hint">↩ não concluídas aparecem amanhã automaticamente</div>
   </div>
@@ -754,15 +778,22 @@ async function initPend(){
       throw new Error('Supabase retornou null');
     }
 
+    function parseTags(r){
+      if(r.recorrente) return [];
+      try{const t=JSON.parse(r.rec_id);if(Array.isArray(t))return t;}catch(e){}
+      return [];
+    }
     const items=[
       ...(naoFeitas||[]).map(r=>({
         id:r.id,text:r.texto,done:false,
         carryover:r.data!==TODAY,
-        recorrente:r.recorrente,recId:r.rec_id
+        recorrente:r.recorrente,recId:r.rec_id,
+        tags:parseTags(r)
       })),
       ...(feitasHoje||[]).map(r=>({
         id:r.id,text:r.texto,done:true,
-        carryover:false,recorrente:r.recorrente,recId:r.rec_id
+        carryover:false,recorrente:r.recorrente,recId:r.rec_id,
+        tags:parseTags(r)
       }))
     ];
     sv('pend_list',items);sv('pend_date',TODAY);
@@ -782,7 +813,17 @@ async function initPend(){
 function renderPend(items){
   const list=document.getElementById('pend-list');list.innerHTML='';
   if(!items.length){list.innerHTML='<div class="empty-state">nenhuma pendência ainda</div>';updateProg();return;}
-  items.forEach((item,i)=>{
+  // ordena: não feitas primeiro, depois por prioridade (alta > media > baixa > sem)
+  const prioOrder={'alta':0,'media':1,'baixa':2};
+  const sorted=[...items].sort((a,b)=>{
+    if(a.done!==b.done) return a.done?1:-1;
+    const pa=a.tags&&a.tags.find(t=>prioOrder[t]!==undefined);
+    const pb=b.tags&&b.tags.find(t=>prioOrder[t]!==undefined);
+    const va=pa!==undefined?prioOrder[pa]:99;
+    const vb=pb!==undefined?prioOrder[pb]:99;
+    return va-vb;
+  });
+  sorted.forEach((item,i)=>{
     const div=document.createElement('div');
     div.className='pend-item'+(item.done?' done':'');
     div.draggable=true;div.dataset.idx=i;
@@ -803,6 +844,7 @@ function renderPend(items){
     chk.innerHTML=item.done?CHK:'';chk.onclick=()=>togglePend(i);
     const txt=document.createElement('span');
     txt.className='pend-text';txt.textContent=item.text;
+    txt.onclick=()=>{const oi=items.findIndex(x=>x.id===item.id&&x.text===item.text);togglePend(oi);};
     // dblclick to edit inline
     txt.addEventListener('dblclick',()=>{
       txt.contentEditable='true';txt.focus();
@@ -823,7 +865,7 @@ function renderPend(items){
     div.appendChild(chk);div.appendChild(txt);
     if(item.carryover){const c=document.createElement('span');c.className='pend-carry';c.textContent='↩';div.appendChild(c);}
     if(item.recorrente){const r=document.createElement('span');r.className='pend-recorrente';r.textContent='↻ recorrente';div.appendChild(r);}
-    const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>delPend(i);
+    const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>{const oi=items.findIndex(x=>x.id===item.id&&x.text===item.text);delPend(oi);};
     div.appendChild(del);
     list.appendChild(div);
   });
@@ -835,9 +877,11 @@ function renderPend(items){
 }
 async function addPend(){
   const input=document.getElementById('add-input');const text=input.value.trim();if(!text)return;input.value='';
-  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false});
+  const tags=[...selectedTags];
+  resetTags();
+  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false,rec_id:tags.length?JSON.stringify(tags):null});
   const items=ld('pend_list',[]);
-  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false});
+  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false,tags});
   sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);
 }
 async function togglePend(i){
@@ -1152,6 +1196,21 @@ async function initRecorrencias(){
     // cria no Supabase
     await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:false,recorrente:true,rec_id:r.id});
   }
+}
+
+// ── ETIQUETAS ──
+const selectedTags=new Set();
+function toggleTag(tag){
+  const btn=document.getElementById('tag-'+tag);
+  if(selectedTags.has(tag)){selectedTags.delete(tag);btn.className='tag-toggle';}
+  else{selectedTags.add(tag);btn.className='tag-toggle selected-'+tag;}
+}
+function resetTags(){
+  selectedTags.clear();
+  ['jessica','juliana','alta','media','baixa'].forEach(t=>{
+    const btn=document.getElementById('tag-'+t);
+    if(btn) btn.className='tag-toggle';
+  });
 }
 
 // ── INIT ──
