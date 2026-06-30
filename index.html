@@ -154,7 +154,7 @@
   /* ETIQUETAS PENDÊNCIAS */
   .pend-tags{display:flex;gap:4px;flex-wrap:wrap;align-self:center;flex-shrink:0;}
   .etiqueta{font-size:9px;padding:1px 7px;border-radius:20px;white-space:nowrap;font-weight:500;}
-  .etiqueta-jessica{background:#FF6D00;color:#FFFFFF;}
+  .etiqueta-jessica{background:#FF6D00 !important;color:#FFFFFF !important;}
   .etiqueta-juliana{background:#EDE6FA;color:#6B4FA0;}
   .etiqueta-alta{background:#FDEAE6;color:#B5290A;}
   .etiqueta-media{background:#FDF0E0;color:#B5600A;}
@@ -886,8 +886,12 @@ function renderPend(items){
       sv('pend_list',its);renderPend(its);
     });
     const chk=document.createElement('div');
-    chk.className='check-box';chk.style.cssText=item.done?'background:var(--accent);border-color:var(--accent);':'';
-    chk.innerHTML=item.done?CHK:'';chk.onclick=()=>togglePend(i);
+    chk.className='check-box';chk.style.cssText=item.done?'background:var(--accent);border-color:var(--accent)':'';
+    chk.innerHTML=item.done?CHK:'';chk.onclick=()=>{
+      const its=ld('pend_list',[]);
+      const oi=item.id?its.findIndex(x=>x.id===item.id):its.findIndex(x=>x.text===item.text);
+      if(oi>=0)togglePend(oi);
+    };
     const txt=document.createElement('span');
     txt.className='pend-text';txt.textContent=item.text;
     // dblclick to edit inline
@@ -944,7 +948,11 @@ function renderPend(items){
     tagBtn.className='item-edit';tagBtn.textContent='🏷';tagBtn.title='editar etiquetas';
     tagBtn.onclick=(e)=>{e.stopPropagation();openTagEditor(item,div,items);};
     div.appendChild(tagBtn);
-    const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>{const oi=items.findIndex(x=>x.id===item.id&&x.text===item.text);delPend(oi);};
+    const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>{
+      const its=ld('pend_list',[]);
+      const oi=item.id?its.findIndex(x=>x.id===item.id):its.findIndex(x=>x.text===item.text);
+      if(oi>=0)delPend(oi);
+    };
     div.appendChild(del);
     list.appendChild(div);
   });
