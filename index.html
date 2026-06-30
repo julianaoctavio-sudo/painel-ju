@@ -864,7 +864,22 @@ function renderPend(items){
     div.querySelector('.drag-handle').textContent='⠿';
     div.appendChild(chk);div.appendChild(txt);
     if(item.carryover){const c=document.createElement('span');c.className='pend-carry';c.textContent='↩';div.appendChild(c);}
-    if(item.recorrente){const r=document.createElement('span');r.className='pend-recorrente';r.textContent='↻ recorrente';div.appendChild(r);}
+    if(item.recorrente){const r=document.createElement('span');r.className='pend-recorrente';r.textContent='↻';div.appendChild(r);}
+    // etiquetas
+    const tagNames={'jessica':'🩷 Jéssica','juliana':'🟣 Juliana','alta':'🔴 Alta','media':'🟡 Média','baixa':'🟢 Baixa'};
+    // garante que tags é array — pode vir como string do Supabase
+    let itemTags=item.tags||[];
+    if(typeof itemTags==='string'){try{itemTags=JSON.parse(itemTags);}catch(e){itemTags=[];}}
+    if(!Array.isArray(itemTags)) itemTags=[];
+    // também tenta parsear recId se tags estiver vazio
+    if(!itemTags.length&&item.recId&&!item.recorrente){
+      try{const t=JSON.parse(item.recId);if(Array.isArray(t))itemTags=t;}catch(e){}
+    }
+    if(itemTags.length){
+      const tgWrap=document.createElement('div');tgWrap.className='pend-tags';
+      itemTags.forEach(t=>{const tg=document.createElement('span');tg.className='etiqueta etiqueta-'+t;tg.textContent=tagNames[t]||t;tgWrap.appendChild(tg);});
+      div.appendChild(tgWrap);
+    }
     const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>{const oi=items.findIndex(x=>x.id===item.id&&x.text===item.text);delPend(oi);};
     div.appendChild(del);
     list.appendChild(div);
