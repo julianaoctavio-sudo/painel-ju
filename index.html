@@ -155,6 +155,7 @@
   .pend-tags{display:flex;gap:4px;flex-wrap:wrap;align-self:center;flex-shrink:0;}
   .etiqueta{font-size:9px;padding:1px 7px;border-radius:20px;white-space:nowrap;font-weight:500;}
   .etiqueta-jessica{background:#FFE8D6;color:#BF4F00;}
+  .etiqueta-jessica::before{content:'●';margin-right:4px;color:#FF6D00;}
   .etiqueta-juliana{background:#EDE6FA;color:#6B4FA0;}
   .etiqueta-alta{background:#FDEAE6;color:#B5290A;}
   .etiqueta-media{background:#FDF0E0;color:#B5600A;}
@@ -289,7 +290,7 @@
       <button class="add-btn" onclick="addPend()">adicionar</button>
     </div>
     <div class="tag-selectors">
-      <button class="tag-toggle" id="tag-jessica" onclick="toggleTag('jessica')">● Jéssica</button>
+      <button class="tag-toggle" id="tag-jessica" onclick="toggleTag('jessica')">Jéssica</button>
       <button class="tag-toggle" id="tag-juliana" onclick="toggleTag('juliana')">🟣 Juliana</button>
       <span style="width:1px;background:var(--border);margin:0 2px;"></span>
       <button class="tag-toggle" id="tag-alta" onclick="toggleTag('alta')">🔴 Alta</button>
@@ -841,7 +842,7 @@ function openTagEditor(item, div, items){
       // re-render só as tags no item
       const tgWrap=div.querySelector('.pend-tags');
       if(tgWrap) tgWrap.remove();
-      const tagNames={'jessica':'● Jéssica','juliana':'🟣 Juliana','alta':'🔴 Alta','media':'🟡 Média','baixa':'🟢 Baixa'};
+      const tagNames={'jessica':'Jéssica','juliana':'🟣 Juliana','alta':'🔴 Alta','media':'🟡 Média','baixa':'🟢 Baixa'};
       if(newTags.length){
         const nw=document.createElement('div');nw.className='pend-tags';
         newTags.forEach(tg=>{const s=document.createElement('span');s.className='etiqueta etiqueta-'+tg;s.textContent=tagNames[tg];nw.appendChild(s);});
@@ -929,7 +930,7 @@ function renderPend(items){
     if(item.carryover){const c=document.createElement('span');c.className='pend-carry';c.textContent='↩';div.appendChild(c);}
     if(item.recorrente){const r=document.createElement('span');r.className='pend-recorrente';r.textContent='↻';div.appendChild(r);}
     // etiquetas
-    const tagNames={'jessica':'● Jéssica','juliana':'🟣 Juliana','alta':'🔴 Alta','media':'🟡 Média','baixa':'🟢 Baixa'};
+    const tagNames={'jessica':'Jéssica','juliana':'🟣 Juliana','alta':'🔴 Alta','media':'🟡 Média','baixa':'🟢 Baixa'};
     // garante que tags é array — pode vir como string do Supabase
     let itemTags=item.tags||[];
     if(typeof itemTags==='string'){try{itemTags=JSON.parse(itemTags);}catch(e){itemTags=[];}}
