@@ -281,6 +281,9 @@
   .pend-hist-texto{font-size:11px;color:var(--text);line-height:1.5;}
   .pend-add-row{display:flex;gap:6px;margin-top:8px;align-items:center;}
   .pend-add-row input{flex:1;}
+  .pend-nota-editavel{cursor:text;line-height:1.5;}
+  .pend-nota-editavel[contenteditable="true"]{outline:none;border-bottom:1px solid var(--accent);background:var(--accent-light);border-radius:2px;padding:2px 4px;}
+  .pend-date-input{background:var(--bg);border:1px solid var(--border);border-radius:4px;font-family:'DM Mono',monospace;font-size:10.5px;color:var(--text);padding:3px 5px;outline:none;}
 </style>
 </head>
 <body>
@@ -331,7 +334,7 @@
 
   <!-- ROTINAS + PENDÊNCIAS lado a lado -->
   <div class="col-full" style="display:flex;gap:14px;align-items:flex-start;">
-    <div class="card" style="flex:0 0 300px;">
+    <div class="card" style="flex:1 1 0;min-width:280px;">
       <div class="card-label">Rotinas do dia</div>
       <div id="rotinas-list"></div>
       <div class="add-row">
@@ -340,7 +343,7 @@
       </div>
     </div>
 
-    <div class="card" style="flex:1;min-width:0;">
+    <div class="card" style="flex:2 1 0;min-width:0;">
       <div class="card-label">
         Pendências
         <button class="card-label-btn" onclick="toggleShowDone()" id="pend-filtro-btn" title="mostrar concluídas">mostrar concluídas</button>
@@ -357,7 +360,7 @@
         <input class="add-input" id="add-input" type="text" placeholder="+ adicionar pendência..." onkeydown="if(event.key==='Enter')addPend()">
         <button class="add-btn" onclick="addPend()">adicionar</button>
       </div>
-      <div class="carry-hint">✓ conclui · digite e aperte Enter na nota pra adicionar atualização (mantém histórico) · 🕘 vê histórico completo · ↩ carregada de dia anterior · ↻ recorrente</div>
+      <div class="carry-hint">✓ conclui · duplo clique na nota pra editar · 🕘 histórico completo · ↩ carregada de dia anterior · ↻ recorrente</div>
     </div>
   </div>
 
@@ -881,10 +884,7 @@ function toggleHist(id){
   document.querySelectorAll('.pend-hist-row').forEach(r=>r.style.display='none');
   row.style.display=isOpen?'none':'table-row';
 }
-async function salvarNota(id){
-  const input=document.getElementById('nota-input-'+id);
-  if(!input)return;
-  const nota=input.value.trim();
+async function salvarNota(id,nota){
   if(!nota)return;
   const items=ld('pend_list',[]);
   const oi=items.findIndex(x=>x.id===id);
@@ -892,18 +892,17 @@ async function salvarNota(id){
   const entry={id:Date.now(),data:TODAY,nota};
   const atualizacoes=[...(items[oi].atualizacoes||[]),entry];
   items[oi].atualizacoes=atualizacoes;
-  items[oi].informadoEm=null;
   sv('pend_list',items);
-  await supaFetch('pendencias?id=eq.'+id,'PATCH',{atualizacoes,informado_em:null});
+  await supaFetch('pendencias?id=eq.'+id,'PATCH',{atualizacoes});
   renderPend(items);
 }
-async function marcarInformado(id){
+async function updateInformado(id,dateValue){
   const items=ld('pend_list',[]);
   const oi=items.findIndex(x=>x.id===id);
   if(oi<0)return;
-  items[oi].informadoEm=TODAY;
+  items[oi].informadoEm=dateValue||null;
   sv('pend_list',items);
-  await supaFetch('pendencias?id=eq.'+id,'PATCH',{informado_em:TODAY});
+  await supaFetch('pendencias?id=eq.'+id,'PATCH',{informado_em:dateValue||null});
   renderPend(items);
 }
 
@@ -997,20 +996,47 @@ function renderPend(items){
     tr.appendChild(tdPrio);
 
     const tdNota=document.createElement('td');tdNota.className='pend-td-nota';
-    tdNota.innerHTML=(last
-      ?'<div>'+escapeHtml(last.nota)+'</div><div class="pend-nota-sub">atualizado em '+formatBR(last.data)+'</div>'
-      :'<div class="pend-nota-vazia">sem atualização ainda</div>')
-      +'<div class="pend-add-row"><input class="add-input" id="nota-input-'+item.id+'" type="text" placeholder="+ nova atualização..." onkeydown="if(event.key===\'Enter\')salvarNota('+item.id+')"><button class="add-btn" onclick="salvarNota('+item.id+')">+</button></div>';
+    const notaTextDiv=document.createElement('div');
+    notaTextDiv.className='pend-nota-editavel'+(last?'':' pend-nota-vazia');
+    notaTextDiv.textContent=last?last.nota:'clique duas vezes pra escrever...';
+    notaTextDiv.dataset.empty=last?'0':'1';
+    notaTextDiv.addEventListener('dblclick',()=>{
+      if(notaTextDiv.dataset.empty==='1')notaTextDiv.textContent='';
+      notaTextDiv.contentEditable='true';notaTextDiv.classList.remove('pend-nota-vazia');notaTextDiv.focus();
+      const r=document.createRange();r.selectNodeContents(notaTextDiv);
+      const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+    });
+    notaTextDiv.addEventListener('blur',()=>{
+      notaTextDiv.contentEditable='false';
+      const novo=notaTextDiv.textContent.trim();
+      const anterior=last?last.nota:'';
+      if(!novo||novo===anterior){
+        notaTextDiv.textContent=last?last.nota:'clique duas vezes pra escrever...';
+        notaTextDiv.className='pend-nota-editavel'+(last?'':' pend-nota-vazia');
+        notaTextDiv.dataset.empty=last?'0':'1';
+        return;
+      }
+      salvarNota(item.id,novo);
+    });
+    notaTextDiv.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();notaTextDiv.blur();}});
+    tdNota.appendChild(notaTextDiv);
+    if(last){
+      const sub=document.createElement('div');sub.className='pend-nota-sub';
+      sub.textContent='atualizado em '+formatBR(last.data);
+      tdNota.appendChild(sub);
+    }
     tr.appendChild(tdNota);
 
     const tdStatus=document.createElement('td');
-    tdStatus.innerHTML=selectHtml(item.id,'status',item.status,[['andamento','🟡 Andamento'],['travado','🔴 Travado'],['concluido','🟢 Concluído'],['aguardando_terceiro','🔵 Aguard. terceiro']]);
+    tdStatus.innerHTML=selectHtml(item.id,'status',item.status,[['a_iniciar','⚪ A iniciar'],['andamento','🟡 Andamento'],['travado','🔴 Travado'],['concluido','🟢 Concluído'],['aguardando_terceiro','🔵 Aguard. terceiro']]);
     tr.appendChild(tdStatus);
 
     const tdRep=document.createElement('td');tdRep.className='and-td-rep';
-    tdRep.innerHTML=item.informadoEm
-      ?formatBR(item.informadoEm)
-      :'<span class="and-rep-pendente" onclick="marcarInformado('+item.id+')">— marcar</span>';
+    const repInput=document.createElement('input');
+    repInput.type='date';repInput.className='pend-date-input';
+    repInput.value=item.informadoEm||'';
+    repInput.onchange=()=>updateInformado(item.id,repInput.value);
+    tdRep.appendChild(repInput);
     tr.appendChild(tdRep);
 
     const tdAcoes=document.createElement('td');tdAcoes.className='pend-td-acoes';
