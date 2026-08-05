@@ -364,35 +364,6 @@
     </div>
   </div>
 
-  <!-- POMODORO -->
-  <div class="col-full">
-    <div class="pomo-wrap">
-      <div class="pomo-left">
-        <div class="pomo-title-sm">Pomodoro — bloco de foco</div>
-        <div class="pomo-phase-txt" id="pomo-phase-label">🍅 Foco — 25 min</div>
-        <div class="pomo-ciclos" id="pomo-dots"></div>
-      </div>
-      <div class="pomo-center">
-        <div class="pomo-ring">
-          <svg width="84" height="84" viewBox="0 0 84 84">
-            <circle class="pomo-ring-bg" cx="42" cy="42" r="36"/>
-            <circle class="pomo-ring-fill" id="pomo-ring-fill" cx="42" cy="42" r="36"
-              stroke="var(--accent)" stroke-dasharray="226.19" stroke-dashoffset="0"/>
-          </svg>
-          <div class="pomo-time" id="pomo-time">25:00</div>
-        </div>
-        <div class="pomo-btns">
-          <button class="pomo-btn primary" id="pomo-start-btn" onclick="togglePomo()">iniciar</button>
-          <button class="pomo-btn" onclick="resetPomo()">resetar</button>
-        </div>
-      </div>
-      <div class="pomo-right">
-        <strong id="pomo-ciclo-count">0</strong>ciclos hoje<br><br>
-        🍅 25 min foco<br>☕ 5 min pausa<br>🌿 15 min cada 4
-      </div>
-    </div>
-  </div>
-
   <!-- OKRs 2026 -->
   <div class="kr-section col-full">
     <div class="section-label">OKRs 2026</div>
@@ -1033,9 +1004,13 @@ function renderPend(items){
 
     const tdRep=document.createElement('td');tdRep.className='and-td-rep';
     const repInput=document.createElement('input');
-    repInput.type='date';repInput.className='pend-date-input';
-    repInput.value=item.informadoEm||'';
-    repInput.onchange=()=>updateInformado(item.id,repInput.value);
+    repInput.type='text';repInput.className='pend-date-input';repInput.placeholder='DD/MM/AAAA';
+    repInput.value=isoDateStr(item.informadoEm)?formatBR(item.informadoEm):(item.informadoEm||'');
+    repInput.addEventListener('blur',()=>{
+      const v=repInput.value.trim();
+      if(v!==(item.informadoEm||''))updateInformado(item.id,v);
+    });
+    repInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();repInput.blur();}});
     tdRep.appendChild(repInput);
     tr.appendChild(tdRep);
 
@@ -1097,38 +1072,6 @@ async function delPend(i){
   if(items[i].id) await supaFetch('pendencias?id=eq.'+items[i].id,'DELETE');
   items.splice(i,1);sv('pend_list',items);renderPend(items);
 }
-
-// ── POMODORO ──
-const POMO={FOCO:25*60,PAUSA:5*60,LONGA:15*60};const CIRCUM=2*Math.PI*36;
-let ps={phase:'foco',secs:POMO.FOCO,running:false,ciclos:0,interval:null};
-function initPomo(){const s=ld('pomo_'+TODAY,null);if(s)ps.ciclos=s.ciclos||0;renderDots();document.getElementById('pomo-ciclo-count').textContent=ps.ciclos;}
-function renderDots(){const c=document.getElementById('pomo-dots');c.innerHTML='';for(let i=0;i<4;i++){const d=document.createElement('div');d.className='ciclo-dot'+(i<ps.ciclos%4?' done':i===ps.ciclos%4&&ps.phase==='foco'&&ps.secs<POMO.FOCO?' active':'');c.appendChild(d);}}
-function updatePomoDisplay(){
-  const m=Math.floor(ps.secs/60).toString().padStart(2,'0');const s=(ps.secs%60).toString().padStart(2,'0');
-  document.getElementById('pomo-time').textContent=m+':'+s;
-  const total=ps.phase==='foco'?POMO.FOCO:ps.phase==='pausa'?POMO.PAUSA:POMO.LONGA;
-  const fill=document.getElementById('pomo-ring-fill');
-  fill.style.strokeDashoffset=CIRCUM*(1-ps.secs/total);
-  fill.style.stroke=ps.phase==='foco'?'var(--accent)':ps.phase==='pausa'?'var(--blue)':'var(--amber)';
-  document.getElementById('pomo-phase-label').textContent={foco:'🍅 Foco — 25 min',pausa:'☕ Pausa curta — 5 min',longa:'🌿 Pausa longa — 15 min'}[ps.phase];
-}
-function togglePomo(){
-  if(ps.running){clearInterval(ps.interval);ps.running=false;document.getElementById('pomo-start-btn').textContent='retomar';}
-  else{
-    ps.running=true;document.getElementById('pomo-start-btn').textContent='pausar';
-    ps.interval=setInterval(()=>{
-      if(ps.secs>0){ps.secs--;updatePomoDisplay();renderDots();}
-      else{
-        clearInterval(ps.interval);ps.running=false;
-        if(ps.phase==='foco'){ps.ciclos++;document.getElementById('pomo-ciclo-count').textContent=ps.ciclos;sv('pomo_'+TODAY,{ciclos:ps.ciclos});ps.phase=ps.ciclos%4===0?'longa':'pausa';ps.secs=ps.phase==='longa'?POMO.LONGA:POMO.PAUSA;}
-        else{ps.phase='foco';ps.secs=POMO.FOCO;}
-        document.getElementById('pomo-start-btn').textContent='iniciar';updatePomoDisplay();renderDots();
-        try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.3,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);o.start(ctx.currentTime);o.stop(ctx.currentTime+0.8);}catch(e){}
-      }
-    },1000);
-  }
-}
-function resetPomo(){clearInterval(ps.interval);ps={...ps,phase:'foco',secs:POMO.FOCO,running:false,interval:null};document.getElementById('pomo-start-btn').textContent='iniciar';updatePomoDisplay();renderDots();}
 
 // ── MARCOS ──
 function toggleMarco(kr,idx){
@@ -1376,6 +1319,9 @@ async function initRecorrencias(){
 }
 
 // ── helpers usados pela tabela de pendências ──
+function isoDateStr(s){
+  return !!(s&&/^\d{4}-\d{2}-\d{2}$/.test(s));
+}
 function formatBR(iso){
   if(!iso)return'';
   const parts=iso.split('-');
@@ -1395,8 +1341,6 @@ updateOKRProgress();
 initRoutines();
 initRecorrencias();
 initPend();
-initPomo();
-updatePomoDisplay();
 </script>
 </body>
 </html>
