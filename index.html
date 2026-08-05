@@ -247,6 +247,21 @@
   .and-hist-toggle:hover{color:var(--text);}
   .and-hist-list{display:none;margin-top:6px;}
   .and-hist-list.open{display:block;}
+
+  /* ANDAMENTOS — tabela estilo planilha */
+  .and-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:6px;}
+  table.and-table{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:11.5px;}
+  table.and-table th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:500;padding:7px 10px;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;}
+  table.and-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.and-table tr:last-child td{border-bottom:none;}
+  table.and-table tr:hover td{background:var(--bg);}
+  .and-td-ativ{font-weight:500;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
+  .and-td-data,.and-td-rep{white-space:nowrap;color:var(--muted);font-size:10.5px;}
+  .and-td-nota{line-height:1.5;min-width:200px;}
+  .and-td-status{white-space:nowrap;}
+  .and-td-acoes{white-space:nowrap;text-align:right;}
+  .and-rep-pendente{color:var(--border);cursor:pointer;font-size:10px;}
+  .and-rep-pendente:hover{color:var(--accent);text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -343,13 +358,19 @@
     <div class="card">
       <div class="card-label">
         Registro para reunião
-        <button class="card-label-btn" onclick="toggleAndHist()" title="ver histórico já reportado">🕘 histórico</button>
+        <button class="card-label-btn" onclick="toggleAndSoAbertos()" id="and-filtro-btn" title="mostrar só pendentes de reportar">mostrar tudo</button>
       </div>
-      <div id="and-list"></div>
-      <div class="and-hist-list" id="and-hist-list"></div>
-      <textarea class="diario-add-area" id="and-nota-input" placeholder="O que avançou, onde travou, ou próximo passo...&#10;Ex: Travei na conciliação do cartão porque falta a NF de um lançamento" style="min-height:52px;margin-top:10px;"></textarea>
-      <div class="and-form-row">
-        <input class="add-input" id="and-atividade-input" type="text" placeholder="atividade (opcional, ex: Conciliação cartão Itaú)">
+      <div class="and-table-wrap">
+        <table class="and-table">
+          <thead>
+            <tr><th>Atividade</th><th>Data</th><th>Nota (o que foi feito / onde travou / próximo passo)</th><th>Status</th><th>Reportado em</th><th></th></tr>
+          </thead>
+          <tbody id="and-tbody"></tbody>
+        </table>
+      </div>
+      <div class="and-form-row" style="margin-top:10px;">
+        <input class="add-input" id="and-atividade-input" type="text" placeholder="atividade (liga a uma pendência existente, ou cria uma nova)">
+        <input class="add-input" id="and-nota-input" type="text" placeholder="nota — o que foi feito / onde travou / próximo passo" onkeydown="if(event.key==='Enter')addAndamento()">
         <select class="and-select" id="and-status-input">
           <option value="andamento">🟡 em andamento</option>
           <option value="travado">🔴 travado</option>
@@ -358,7 +379,7 @@
         </select>
         <button class="add-btn" onclick="addAndamento()">salvar</button>
       </div>
-      <div class="carry-hint">✓ marca como já reportado na reunião · × exclui o registro</div>
+      <div class="carry-hint">registro vai direto pra pendência (mesma tabela) · clique em "—" pra marcar como reportado</div>
     </div>
   </div>
 
@@ -1337,62 +1358,60 @@ async function initRecorrencias(){
   }
 }
 
-// ── ANDAMENTOS — registro para reunião ──
+// ── REGISTRO PARA REUNIÃO — lê/escreve em pendencias.atualizacoes ──
 const AND_STATUS_LABEL={andamento:'em andamento',travado:'travado',concluido:'concluído',aguardando_terceiro:'aguardando terceiro'};
 const AND_STATUS_EMOJI={andamento:'🟡',travado:'🔴',concluido:'🟢',aguardando_terceiro:'🔵'};
-let andHistOpen=false;
+let andSoAbertos=true;
 
 async function initAndamentos(){
-  const pendentes=await supaFetch('andamentos?reportado_em=is.null&order=data.desc,created_at.desc');
-  renderAndamentos(pendentes||[]);
+  renderAndTable();
 }
-function renderAndamentos(items){
-  const list=document.getElementById('and-list');
-  if(!list)return;
-  list.innerHTML='';
-  if(!items.length){
-    list.innerHTML='<div class="empty-state">nenhum ponto pendente de reportar</div>';
+async function renderAndTable(){
+  const tbody=document.getElementById('and-tbody');
+  if(!tbody)return;
+  tbody.innerHTML='<tr><td colspan="6" class="empty-state">carregando…</td></tr>';
+  const rows=await supaFetch('pendencias?select=id,texto,atualizacoes&order=id.desc&limit=300');
+  let flat=[];
+  (rows||[]).forEach(r=>{
+    let upds=r.atualizacoes;
+    if(typeof upds==='string'){try{upds=JSON.parse(upds);}catch(e){upds=[];}}
+    if(!Array.isArray(upds))upds=[];
+    upds.forEach(u=>{
+      if(andSoAbertos&&u.reportado_em)return;
+      flat.push({...u,pendId:r.id,atividade:r.texto});
+    });
+  });
+  flat.sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.id-a.id));
+  tbody.innerHTML='';
+  if(!flat.length){
+    tbody.innerHTML='<tr><td colspan="6" class="empty-state">'+(andSoAbertos?'nenhum ponto pendente de reportar':'nenhum registro ainda')+'</td></tr>';
     return;
   }
-  items.forEach(it=>{
-    const div=document.createElement('div');
-    div.className='and-entry st-'+it.status;
-    div.innerHTML=`
-      <div class="and-entry-header">
-        <span class="and-badge st-${it.status}">${AND_STATUS_EMOJI[it.status]||''} ${AND_STATUS_LABEL[it.status]||it.status}</span>
-        <span class="and-entry-ativ">${it.atividade?escapeHtml(it.atividade):''}</span>
-        <span class="and-entry-data">${it.data}</span>
-        <button class="and-entry-ok" title="marcar como reportado" onclick="marcarReportado(${it.id})">✓</button>
-        <button class="and-entry-del" title="excluir" onclick="delAndamento(${it.id})">×</button>
-      </div>
-      <div class="and-entry-texto">${escapeHtml(it.nota)}</div>`;
-    list.appendChild(div);
+  flat.forEach(it=>{
+    const tr=document.createElement('tr');
+    const repCell=it.reportado_em
+      ?`<span>${formatBR(it.reportado_em)}</span>`
+      :`<span class="and-rep-pendente" title="marcar como reportado" onclick="marcarReportado(${it.pendId},${it.id})">— marcar</span>`;
+    tr.innerHTML=`
+      <td class="and-td-ativ">${it.atividade?escapeHtml(it.atividade):'<span style="color:var(--border)">—</span>'}</td>
+      <td class="and-td-data">${formatBR(it.data)}</td>
+      <td class="and-td-nota">${escapeHtml(it.nota)}</td>
+      <td class="and-td-status"><span class="and-badge st-${it.status}">${AND_STATUS_EMOJI[it.status]||''} ${AND_STATUS_LABEL[it.status]||it.status}</span></td>
+      <td class="and-td-rep">${repCell}</td>
+      <td class="and-td-acoes"><button class="item-del" title="excluir" onclick="delAndamento(${it.pendId},${it.id})">×</button></td>`;
+    tbody.appendChild(tr);
   });
 }
-async function refreshAndHist(){
-  const wrap=document.getElementById('and-hist-list');
-  wrap.innerHTML='<div class="empty-state">carregando…</div>';
-  const rows=await supaFetch('andamentos?reportado_em=not.is.null&order=reportado_em.desc&limit=30');
-  wrap.innerHTML='';
-  if(!rows||!rows.length){wrap.innerHTML='<div class="empty-state">nenhum registro reportado ainda</div>';return;}
-  rows.forEach(it=>{
-    const div=document.createElement('div');
-    div.className='and-entry st-'+it.status;
-    div.innerHTML=`
-      <div class="and-entry-header">
-        <span class="and-badge st-${it.status}">${AND_STATUS_EMOJI[it.status]||''} ${AND_STATUS_LABEL[it.status]||it.status}</span>
-        <span class="and-entry-ativ">${it.atividade?escapeHtml(it.atividade):''}</span>
-        <span class="and-entry-data">reportado em ${it.reportado_em}</span>
-      </div>
-      <div class="and-entry-texto">${escapeHtml(it.nota)}</div>`;
-    wrap.appendChild(div);
-  });
+function toggleAndSoAbertos(){
+  andSoAbertos=!andSoAbertos;
+  document.getElementById('and-filtro-btn').textContent=andSoAbertos?'mostrar tudo':'só pendentes';
+  renderAndTable();
 }
-async function toggleAndHist(){
-  andHistOpen=!andHistOpen;
-  const wrap=document.getElementById('and-hist-list');
-  wrap.classList.toggle('open',andHistOpen);
-  if(andHistOpen)refreshAndHist();
+function formatBR(iso){
+  if(!iso)return'';
+  const parts=iso.split('-');
+  if(parts.length!==3)return iso;
+  return parts[2]+'/'+parts[1]+'/'+parts[0];
 }
 async function addAndamento(){
   const notaEl=document.getElementById('and-nota-input');
@@ -1402,19 +1421,49 @@ async function addAndamento(){
   if(!nota)return;
   const atividade=ativEl.value.trim();
   const status=statusEl.value;
-  await supaFetch('andamentos','POST',{atividade:atividade||null,nota,status,data:TODAY});
+  const entry={id:Date.now(),data:TODAY,nota,status,reportado_em:null};
+
+  let pend=null;
+  if(atividade){
+    const found=await supaFetch('pendencias?texto=ilike.'+encodeURIComponent(atividade)+'&done=eq.false&limit=1');
+    if(found&&found.length)pend=found[0];
+  }
+  if(pend){
+    let atualizacoes=pend.atualizacoes;
+    if(typeof atualizacoes==='string'){try{atualizacoes=JSON.parse(atualizacoes);}catch(e){atualizacoes=[];}}
+    if(!Array.isArray(atualizacoes))atualizacoes=[];
+    atualizacoes.push(entry);
+    await supaFetch('pendencias?id=eq.'+pend.id,'PATCH',{atualizacoes});
+  }else{
+    const texto=atividade||nota.slice(0,60);
+    await supaFetch('pendencias','POST',{data:TODAY,texto,done:false,carryover:false,recorrente:false,rec_id:null,atualizacoes:[entry]});
+  }
   notaEl.value='';ativEl.value='';statusEl.value='andamento';
-  initAndamentos();
+  renderAndTable();
+  if(typeof initPend==='function')initPend();
 }
-async function marcarReportado(id){
-  await supaFetch('andamentos?id=eq.'+id,'PATCH',{reportado_em:TODAY});
-  initAndamentos();
-  if(andHistOpen)refreshAndHist();
+async function marcarReportado(pendId,entryId){
+  const rows=await supaFetch('pendencias?id=eq.'+pendId+'&select=atualizacoes');
+  if(!rows||!rows.length)return;
+  let atualizacoes=rows[0].atualizacoes;
+  if(typeof atualizacoes==='string'){try{atualizacoes=JSON.parse(atualizacoes);}catch(e){atualizacoes=[];}}
+  if(!Array.isArray(atualizacoes))return;
+  const idx=atualizacoes.findIndex(u=>u.id===entryId);
+  if(idx<0)return;
+  atualizacoes[idx].reportado_em=TODAY;
+  await supaFetch('pendencias?id=eq.'+pendId,'PATCH',{atualizacoes});
+  renderAndTable();
 }
-async function delAndamento(id){
+async function delAndamento(pendId,entryId){
   if(!confirm('Excluir este registro?'))return;
-  await supaFetch('andamentos?id=eq.'+id,'DELETE');
-  initAndamentos();
+  const rows=await supaFetch('pendencias?id=eq.'+pendId+'&select=atualizacoes');
+  if(!rows||!rows.length)return;
+  let atualizacoes=rows[0].atualizacoes;
+  if(typeof atualizacoes==='string'){try{atualizacoes=JSON.parse(atualizacoes);}catch(e){atualizacoes=[];}}
+  if(!Array.isArray(atualizacoes))return;
+  atualizacoes=atualizacoes.filter(u=>u.id!==entryId);
+  await supaFetch('pendencias?id=eq.'+pendId,'PATCH',{atualizacoes});
+  renderAndTable();
 }
 function escapeHtml(s){
   const d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;
