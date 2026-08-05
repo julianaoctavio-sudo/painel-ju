@@ -867,6 +867,16 @@ async function salvarNota(id,nota){
   await supaFetch('pendencias?id=eq.'+id,'PATCH',{atualizacoes});
   renderPend(items);
 }
+async function excluirNotaAtual(id){
+  const items=ld('pend_list',[]);
+  const oi=items.findIndex(x=>x.id===id);
+  if(oi<0||!items[oi].atualizacoes||!items[oi].atualizacoes.length)return;
+  const atualizacoes=items[oi].atualizacoes.slice(0,-1);
+  items[oi].atualizacoes=atualizacoes;
+  sv('pend_list',items);
+  await supaFetch('pendencias?id=eq.'+id,'PATCH',{atualizacoes});
+  renderPend(items);
+}
 async function updateInformado(id,dateValue){
   const items=ld('pend_list',[]);
   const oi=items.findIndex(x=>x.id===id);
@@ -967,8 +977,10 @@ function renderPend(items){
     tr.appendChild(tdPrio);
 
     const tdNota=document.createElement('td');tdNota.className='pend-td-nota';
+    const notaWrap=document.createElement('div');notaWrap.style.cssText='display:flex;align-items:flex-start;gap:4px;';
     const notaTextDiv=document.createElement('div');
     notaTextDiv.className='pend-nota-editavel'+(last?'':' pend-nota-vazia');
+    notaTextDiv.style.flex='1';
     notaTextDiv.textContent=last?last.nota:'clique duas vezes pra escrever...';
     notaTextDiv.dataset.empty=last?'0':'1';
     notaTextDiv.addEventListener('dblclick',()=>{
@@ -981,16 +993,25 @@ function renderPend(items){
       notaTextDiv.contentEditable='false';
       const novo=notaTextDiv.textContent.trim();
       const anterior=last?last.nota:'';
-      if(!novo||novo===anterior){
+      if(novo===anterior){
         notaTextDiv.textContent=last?last.nota:'clique duas vezes pra escrever...';
         notaTextDiv.className='pend-nota-editavel'+(last?'':' pend-nota-vazia');
         notaTextDiv.dataset.empty=last?'0':'1';
         return;
       }
+      if(!novo){excluirNotaAtual(item.id);return;}
       salvarNota(item.id,novo);
     });
     notaTextDiv.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();notaTextDiv.blur();}});
-    tdNota.appendChild(notaTextDiv);
+    notaWrap.appendChild(notaTextDiv);
+    if(last){
+      const delNotaBtn=document.createElement('button');
+      delNotaBtn.className='item-del';delNotaBtn.title='excluir nota atual';delNotaBtn.textContent='×';
+      delNotaBtn.style.cssText='flex-shrink:0;';
+      delNotaBtn.onclick=()=>excluirNotaAtual(item.id);
+      notaWrap.appendChild(delNotaBtn);
+    }
+    tdNota.appendChild(notaWrap);
     if(last){
       const sub=document.createElement('div');sub.className='pend-nota-sub';
       sub.textContent='atualizado em '+formatBR(last.data);
@@ -999,7 +1020,7 @@ function renderPend(items){
     tr.appendChild(tdNota);
 
     const tdStatus=document.createElement('td');
-    tdStatus.innerHTML=selectHtml(item.id,'status',item.status,[['a_iniciar','⚪ A iniciar'],['andamento','🟡 Andamento'],['travado','🔴 Travado'],['concluido','🟢 Concluído'],['aguardando_terceiro','🔵 Aguard. terceiro']]);
+    tdStatus.innerHTML=selectHtml(item.id,'status',item.status,[['recorrente','🔁 Recorrente'],['a_iniciar','⚪ A iniciar'],['andamento','🟡 Andamento'],['travado','🔴 Travado'],['concluido','🟢 Concluído'],['aguardando_terceiro','🔵 Aguard. terceiro']]);
     tr.appendChild(tdStatus);
 
     const tdRep=document.createElement('td');tdRep.className='and-td-rep';
@@ -1302,6 +1323,9 @@ const RECORRENCIAS=[
   {id:'rec_reembolso',texto:'Cobrar reembolso',check:isDoisDiasUteisAntesFim},
   {id:'rec_dia25',texto:'Conferência diarista',check:(d)=>d.getDate()===25},
   {id:'rec_dia26',texto:'Fechamento cartão de crédito',check:(d)=>d.getDate()===26},
+  {id:'rec_btg',texto:'Extrato Conta BTG',check:isPrimeiroDiaUtil},
+  {id:'rec_invoice',texto:'Validar invoice mês anterior',check:(d)=>d.getDate()===1},
+  {id:'rec_retencao',texto:'Notas com retenção',check:isPrimeiroDiaUtil},
 ];
 async function initRecorrencias(){
   const hoje=new Date();
@@ -1314,7 +1338,7 @@ async function initRecorrencias(){
     const jaExisteTexto=await supaFetch('pendencias?data=eq.'+TODAY+'&texto=eq.'+encodeURIComponent(r.texto)+'&limit=1');
     if(jaExisteTexto&&jaExisteTexto.length>0) continue;
     // cria no Supabase
-    await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:false,recorrente:true,rec_id:r.id});
+    await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:false,recorrente:true,rec_id:r.id,status:'recorrente'});
   }
 }
 
