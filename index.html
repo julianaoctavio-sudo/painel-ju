@@ -329,9 +329,9 @@
 
 <div class="grid">
 
-  <!-- ROTINAS -->
-  <div class="col-full" style="display:flex;gap:14px;">
-    <div class="card" style="flex:0 0 380px;">
+  <!-- ROTINAS + PENDÊNCIAS lado a lado -->
+  <div class="col-full" style="display:flex;gap:14px;align-items:flex-start;">
+    <div class="card" style="flex:0 0 300px;">
       <div class="card-label">Rotinas do dia</div>
       <div id="rotinas-list"></div>
       <div class="add-row">
@@ -339,11 +339,8 @@
         <button class="add-btn" onclick="addRotina()">adicionar</button>
       </div>
     </div>
-  </div>
 
-  <!-- PENDÊNCIAS — tabela única (checklist + registro para reunião) -->
-  <div class="col-full">
-    <div class="card">
+    <div class="card" style="flex:1;min-width:0;">
       <div class="card-label">
         Pendências
         <button class="card-label-btn" onclick="toggleShowDone()" id="pend-filtro-btn" title="mostrar concluídas">mostrar concluídas</button>
@@ -351,7 +348,7 @@
       <div class="and-table-wrap">
         <table class="and-table">
           <thead>
-            <tr><th></th><th>Atividade</th><th>Data</th><th>Prioridade</th><th>Nota (o que foi feito / onde travou / próximo passo)</th><th>Status</th><th>Informado em</th><th></th></tr>
+            <tr><th></th><th>Atividade</th><th>Data</th><th>Responsável</th><th>Prioridade</th><th>Nota</th><th>Status</th><th>Informado em</th><th></th></tr>
           </thead>
           <tbody id="pend-tbody"></tbody>
         </table>
@@ -360,15 +357,7 @@
         <input class="add-input" id="add-input" type="text" placeholder="+ adicionar pendência..." onkeydown="if(event.key==='Enter')addPend()">
         <button class="add-btn" onclick="addPend()">adicionar</button>
       </div>
-      <div class="tag-selectors">
-        <button class="tag-toggle" id="tag-jessica" onclick="toggleTag('jessica')">Jéssica</button>
-        <button class="tag-toggle" id="tag-juliana" onclick="toggleTag('juliana')">🟣 Juliana</button>
-        <span style="width:1px;background:var(--border);margin:0 2px;"></span>
-        <button class="tag-toggle" id="tag-alta" onclick="toggleTag('alta')">🔴 Alta</button>
-        <button class="tag-toggle" id="tag-media" onclick="toggleTag('media')">🟡 Média</button>
-        <button class="tag-toggle" id="tag-baixa" onclick="toggleTag('baixa')">🟢 Baixa</button>
-      </div>
-      <div class="carry-hint">✓ conclui · 📝 adiciona atualização (mantém histórico) · 🕘 vê histórico completo · ↩ carregada de dia anterior · ↻ recorrente</div>
+      <div class="carry-hint">✓ conclui · digite e aperte Enter na nota pra adicionar atualização (mantém histórico) · 🕘 vê histórico completo · ↩ carregada de dia anterior · ↻ recorrente</div>
     </div>
   </div>
 
@@ -841,29 +830,25 @@ async function initPend(){
     if(naoFeitas===null&&feitasHoje===null){
       throw new Error('Supabase retornou null');
     }
-    function parseTags(r){
-      if(r.recorrente) return [];
-      try{const t=JSON.parse(r.rec_id);if(Array.isArray(t))return t;}catch(e){}
-      return [];
-    }
     function parseUpds(r){
       let u=r.atualizacoes;
       if(typeof u==='string'){try{u=JSON.parse(u);}catch(e){u=[];}}
       if(!Array.isArray(u))u=[];
       return u;
     }
-    const items=[
-      ...(naoFeitas||[]).map(r=>({
-        id:r.id,text:r.texto,done:false,data:r.data,
-        carryover:r.data!==TODAY,
+    function mapRow(r,done){
+      return {
+        id:r.id,text:r.texto,done,data:r.data,
+        carryover:!done&&r.data!==TODAY,
         recorrente:r.recorrente,recId:r.rec_id,
-        tags:parseTags(r),atualizacoes:parseUpds(r)
-      })),
-      ...(feitasHoje||[]).map(r=>({
-        id:r.id,text:r.texto,done:true,data:r.data,
-        carryover:false,recorrente:r.recorrente,recId:r.rec_id,
-        tags:parseTags(r),atualizacoes:parseUpds(r)
-      }))
+        responsavel:r.responsavel||'',prioridade:r.prioridade||'',
+        status:r.status||'',informadoEm:r.informado_em||null,
+        atualizacoes:parseUpds(r)
+      };
+    }
+    const items=[
+      ...(naoFeitas||[]).map(r=>mapRow(r,false)),
+      ...(feitasHoje||[]).map(r=>mapRow(r,true))
     ];
     sv('pend_list',items);sv('pend_date',TODAY);
     renderPend(items);return;
@@ -878,52 +863,17 @@ async function initPend(){
   renderPend(items);
 }
 
-// ── EDITOR DE ETIQUETAS ──
-function openTagEditor(item, anchorEl, items){
-  document.querySelectorAll('.tag-editor-popup').forEach(e=>e.remove());
-  const popup=document.createElement('div');
-  popup.className='tag-editor-popup';
-  popup.style.cssText='position:absolute;top:100%;right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;z-index:50;display:flex;gap:6px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(0,0,0,0.1);width:220px;';
-  const tagDefs=[
-    {id:'jessica',label:'🩷 Jéssica'},{id:'juliana',label:'🟣 Juliana'},
-    {id:'alta',label:'🔴 Alta'},{id:'media',label:'🟡 Média'},{id:'baixa',label:'🟢 Baixa'}
-  ];
-  let currentTags=new Set(item.tags||[]);
-  tagDefs.forEach(t=>{
-    const btn=document.createElement('button');
-    btn.textContent=t.label;
-    btn.style.cssText='font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:"DM Mono",monospace;';
-    if(currentTags.has(t.id)) btn.classList.add('selected-'+t.id);
-    btn.onclick=async()=>{
-      if(currentTags.has(t.id)){currentTags.delete(t.id);btn.className='';}
-      else{currentTags.add(t.id);btn.className='selected-'+t.id;}
-      const newTags=[...currentTags];
-      if(item.id) await supaFetch('pendencias?id=eq.'+item.id,'PATCH',{rec_id:newTags.length?JSON.stringify(newTags):null});
-      const its=ld('pend_list',[]);
-      const oi=its.findIndex(x=>x.id===item.id);
-      if(oi>=0){its[oi].tags=newTags;sv('pend_list',its);}
-      item.tags=newTags;
-      renderPend(its);
-    };
-    popup.appendChild(btn);
-  });
-  setTimeout(()=>document.addEventListener('click',function close(){popup.remove();document.removeEventListener('click',close);},{once:true}),10);
-  anchorEl.style.position='relative';
-  anchorEl.appendChild(popup);
+// ── CAMPOS EDITÁVEIS (responsável / prioridade / status) ──
+async function updateField(id,field,value){
+  const items=ld('pend_list',[]);
+  const oi=items.findIndex(x=>x.id===id);
+  if(oi>=0){items[oi][field]=value;sv('pend_list',items);}
+  const dbField={responsavel:'responsavel',prioridade:'prioridade',status:'status'}[field];
+  await supaFetch('pendencias?id=eq.'+id,'PATCH',{[dbField]:value||null});
+  renderPend(items);
 }
 
 // ── ATUALIZAÇÕES (histórico dentro da própria pendência) ──
-function toggleAddNota(id){
-  const row=document.getElementById('pend-addnota-'+id);
-  if(!row)return;
-  const isOpen=row.style.display!=='none';
-  document.querySelectorAll('.pend-hist-row').forEach(r=>r.style.display='none');
-  row.style.display=isOpen?'none':'table-row';
-  if(!isOpen){
-    const input=document.getElementById('nota-input-'+id);
-    if(input)setTimeout(()=>input.focus(),0);
-  }
-}
 function toggleHist(id){
   const row=document.getElementById('pend-hist-'+id);
   if(!row)return;
@@ -932,30 +882,28 @@ function toggleHist(id){
   row.style.display=isOpen?'none':'table-row';
 }
 async function salvarNota(id){
-  const notaEl=document.getElementById('nota-input-'+id);
-  const statusEl=document.getElementById('status-input-'+id);
-  const nota=notaEl.value.trim();
+  const input=document.getElementById('nota-input-'+id);
+  if(!input)return;
+  const nota=input.value.trim();
   if(!nota)return;
-  const status=statusEl.value;
   const items=ld('pend_list',[]);
   const oi=items.findIndex(x=>x.id===id);
   if(oi<0)return;
-  const entry={id:Date.now(),data:TODAY,nota,status,reportado_em:null};
+  const entry={id:Date.now(),data:TODAY,nota};
   const atualizacoes=[...(items[oi].atualizacoes||[]),entry];
   items[oi].atualizacoes=atualizacoes;
+  items[oi].informadoEm=null;
   sv('pend_list',items);
-  await supaFetch('pendencias?id=eq.'+id,'PATCH',{atualizacoes});
+  await supaFetch('pendencias?id=eq.'+id,'PATCH',{atualizacoes,informado_em:null});
   renderPend(items);
 }
 async function marcarInformado(id){
   const items=ld('pend_list',[]);
   const oi=items.findIndex(x=>x.id===id);
-  if(oi<0||!items[oi].atualizacoes||!items[oi].atualizacoes.length)return;
-  const atualizacoes=[...items[oi].atualizacoes];
-  atualizacoes[atualizacoes.length-1]={...atualizacoes[atualizacoes.length-1],reportado_em:TODAY};
-  items[oi].atualizacoes=atualizacoes;
+  if(oi<0)return;
+  items[oi].informadoEm=TODAY;
   sv('pend_list',items);
-  await supaFetch('pendencias?id=eq.'+id,'PATCH',{atualizacoes});
+  await supaFetch('pendencias?id=eq.'+id,'PATCH',{informado_em:TODAY});
   renderPend(items);
 }
 
@@ -967,7 +915,18 @@ function toggleShowDone(){
 }
 
 const PRIO_ORDER={'alta':0,'media':1,'baixa':2};
-const PRIO_LABEL={'alta':'🔴 alta','media':'🟡 média','baixa':'🟢 baixa'};
+const PRIO_LABEL={'alta':'🔴 Alta','media':'🟡 Média','baixa':'🟢 Baixa'};
+const RESP_LABEL={'jessica':'Jéssica','juliana':'🟣 Juliana'};
+
+function selectHtml(id,field,current,options){
+  let html='<select class="and-select" onchange="updateField('+id+',\''+field+'\',this.value)">';
+  html+='<option value=""'+(!current?' selected':'')+'>—</option>';
+  options.forEach(([val,label])=>{
+    html+='<option value="'+val+'"'+(current===val?' selected':'')+'>'+label+'</option>';
+  });
+  html+='</select>';
+  return html;
+}
 
 function renderPend(items){
   const tbody=document.getElementById('pend-tbody');
@@ -975,15 +934,13 @@ function renderPend(items){
   tbody.innerHTML='';
   const visible=items.filter(i=>pendShowDone?true:!i.done);
   if(!visible.length){
-    tbody.innerHTML='<tr><td colspan="8" class="empty-state">nenhuma pendência'+(pendShowDone?'':' em aberto')+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="9" class="empty-state">nenhuma pendência'+(pendShowDone?'':' em aberto')+'</td></tr>';
     updateProg(items);return;
   }
   const sorted=[...visible].sort((a,b)=>{
     if(a.done!==b.done) return a.done?1:-1;
-    const pa=a.tags&&a.tags.find(t=>PRIO_ORDER[t]!==undefined);
-    const pb=b.tags&&b.tags.find(t=>PRIO_ORDER[t]!==undefined);
-    const va=pa!==undefined?PRIO_ORDER[pa]:99;
-    const vb=pb!==undefined?PRIO_ORDER[pb]:99;
+    const va=PRIO_ORDER[a.prioridade]!==undefined?PRIO_ORDER[a.prioridade]:99;
+    const vb=PRIO_ORDER[b.prioridade]!==undefined?PRIO_ORDER[b.prioridade]:99;
     return va-vb;
   });
   sorted.forEach(item=>{
@@ -1031,81 +988,58 @@ function renderPend(items){
     const tdData=document.createElement('td');tdData.className='pend-td-data';
     tdData.textContent=formatBR(item.data);tr.appendChild(tdData);
 
+    const tdResp=document.createElement('td');
+    tdResp.innerHTML=selectHtml(item.id,'responsavel',item.responsavel,[['jessica','Jéssica'],['juliana','🟣 Juliana']]);
+    tr.appendChild(tdResp);
+
     const tdPrio=document.createElement('td');
-    const prio=item.tags&&item.tags.find(t=>PRIO_ORDER[t]!==undefined);
-    tdPrio.innerHTML=prio?'<span class="etiqueta etiqueta-'+prio+'">'+PRIO_LABEL[prio]+'</span>':'<span style="color:var(--border)">—</span>';
+    tdPrio.innerHTML=selectHtml(item.id,'prioridade',item.prioridade,[['alta','🔴 Alta'],['media','🟡 Média'],['baixa','🟢 Baixa']]);
     tr.appendChild(tdPrio);
 
     const tdNota=document.createElement('td');tdNota.className='pend-td-nota';
-    tdNota.innerHTML=last
+    tdNota.innerHTML=(last
       ?'<div>'+escapeHtml(last.nota)+'</div><div class="pend-nota-sub">atualizado em '+formatBR(last.data)+'</div>'
-      :'<span class="pend-nota-vazia">sem atualização ainda</span>';
+      :'<div class="pend-nota-vazia">sem atualização ainda</div>')
+      +'<div class="pend-add-row"><input class="add-input" id="nota-input-'+item.id+'" type="text" placeholder="+ nova atualização..." onkeydown="if(event.key===\'Enter\')salvarNota('+item.id+')"><button class="add-btn" onclick="salvarNota('+item.id+')">+</button></div>';
     tr.appendChild(tdNota);
 
     const tdStatus=document.createElement('td');
-    const statusVal=last?last.status:null;
-    tdStatus.innerHTML=statusVal
-      ?'<span class="and-badge st-'+statusVal+'">'+(AND_STATUS_EMOJI[statusVal]||'')+' '+(AND_STATUS_LABEL[statusVal]||statusVal)+'</span>'
-      :'<span style="color:var(--border)">—</span>';
+    tdStatus.innerHTML=selectHtml(item.id,'status',item.status,[['andamento','🟡 Andamento'],['travado','🔴 Travado'],['concluido','🟢 Concluído'],['aguardando_terceiro','🔵 Aguard. terceiro']]);
     tr.appendChild(tdStatus);
 
     const tdRep=document.createElement('td');tdRep.className='and-td-rep';
-    if(last){
-      tdRep.innerHTML=last.reportado_em
-        ?formatBR(last.reportado_em)
-        :'<span class="and-rep-pendente" onclick="marcarInformado('+item.id+')">— marcar</span>';
-    }else{
-      tdRep.innerHTML='<span style="color:var(--border)">—</span>';
-    }
+    tdRep.innerHTML=item.informadoEm
+      ?formatBR(item.informadoEm)
+      :'<span class="and-rep-pendente" onclick="marcarInformado('+item.id+')">— marcar</span>';
     tr.appendChild(tdRep);
 
     const tdAcoes=document.createElement('td');tdAcoes.className='pend-td-acoes';
-    const btnNota=document.createElement('button');btnNota.className='item-edit';btnNota.title='adicionar atualização';btnNota.textContent='📝';
-    btnNota.onclick=()=>toggleAddNota(item.id);
     const btnHist=document.createElement('button');btnHist.className='item-edit';btnHist.title='ver histórico ('+upds.length+')';btnHist.textContent='🕘';
     btnHist.onclick=()=>toggleHist(item.id);
-    const btnTag=document.createElement('button');btnTag.className='item-edit';btnTag.title='editar etiquetas';btnTag.textContent='🏷';
-    btnTag.onclick=(e)=>{e.stopPropagation();openTagEditor(item,tdAcoes,items);};
     const btnDel=document.createElement('button');btnDel.className='item-del';btnDel.title='excluir';btnDel.textContent='×';
     btnDel.onclick=()=>{
       const its=ld('pend_list',[]);
       const oi=item.id?its.findIndex(x=>x.id===item.id):its.findIndex(x=>x.text===item.text);
       if(oi>=0)delPend(oi);
     };
-    tdAcoes.appendChild(btnNota);tdAcoes.appendChild(btnHist);tdAcoes.appendChild(btnTag);tdAcoes.appendChild(btnDel);
+    tdAcoes.appendChild(btnHist);tdAcoes.appendChild(btnDel);
     tr.appendChild(tdAcoes);
     tbody.appendChild(tr);
 
     const histTr=document.createElement('tr');histTr.className='pend-hist-row';histTr.id='pend-hist-'+item.id;histTr.style.display='none';
-    const histTd=document.createElement('td');histTd.colSpan=8;
+    const histTd=document.createElement('td');histTd.colSpan=9;
     histTd.innerHTML=upds.length
-      ?upds.slice().reverse().map(u=>'<div class="pend-hist-entry"><div class="pend-hist-meta"><span>'+formatBR(u.data)+'</span><span class="and-badge st-'+u.status+'">'+(AND_STATUS_EMOJI[u.status]||'')+' '+(AND_STATUS_LABEL[u.status]||u.status)+'</span>'+(u.reportado_em?'<span>· informado em '+formatBR(u.reportado_em)+'</span>':'<span>· ainda não informado</span>')+'</div><div class="pend-hist-texto">'+escapeHtml(u.nota)+'</div></div>').join('')
+      ?upds.slice().reverse().map(u=>'<div class="pend-hist-entry"><div class="pend-hist-meta">'+formatBR(u.data)+'</div><div class="pend-hist-texto">'+escapeHtml(u.nota)+'</div></div>').join('')
       :'<div class="empty-state">nenhuma atualização registrada ainda</div>';
     histTr.appendChild(histTd);tbody.appendChild(histTr);
-
-    const addTr=document.createElement('tr');addTr.className='pend-hist-row';addTr.id='pend-addnota-'+item.id;addTr.style.display='none';
-    const addTd=document.createElement('td');addTd.colSpan=8;
-    addTd.innerHTML='<div class="pend-add-row">'
-      +'<input class="add-input" id="nota-input-'+item.id+'" type="text" placeholder="o que foi feito / onde travou / próximo passo..." onkeydown="if(event.key===\'Enter\')salvarNota('+item.id+')">'
-      +'<select class="and-select" id="status-input-'+item.id+'">'
-      +'<option value="andamento">🟡 em andamento</option>'
-      +'<option value="travado">🔴 travado</option>'
-      +'<option value="concluido">🟢 concluído</option>'
-      +'<option value="aguardando_terceiro">🔵 aguardando terceiro</option>'
-      +'</select>'
-      +'<button class="add-btn" onclick="salvarNota('+item.id+')">salvar</button>'
-      +'</div>';
-    addTr.appendChild(addTd);tbody.appendChild(addTr);
   });
   updateProg(items);
 }
 async function addPend(){
   const input=document.getElementById('add-input');const text=input.value.trim();if(!text)return;input.value='';
-  const tags=[...selectedTags];
-  resetTags();
-  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false,rec_id:tags.length?JSON.stringify(tags):null,atualizacoes:[]});
+  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false,rec_id:null,atualizacoes:[]});
   const items=ld('pend_list',[]);
-  items.push({id:row&&row[0]?row[0].id:null,text,done:false,data:TODAY,carryover:false,tags,atualizacoes:[]});
+  items.push({id:row&&row[0]?row[0].id:null,text,done:false,data:TODAY,carryover:false,responsavel:'',prioridade:'',status:'',informadoEm:null,atualizacoes:[]});
   sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);
 }
 async function togglePend(i){
@@ -1416,8 +1350,6 @@ async function initRecorrencias(){
 }
 
 // ── helpers usados pela tabela de pendências ──
-const AND_STATUS_LABEL={andamento:'em andamento',travado:'travado',concluido:'concluído',aguardando_terceiro:'aguardando terceiro'};
-const AND_STATUS_EMOJI={andamento:'🟡',travado:'🔴',concluido:'🟢',aguardando_terceiro:'🔵'};
 function formatBR(iso){
   if(!iso)return'';
   const parts=iso.split('-');
@@ -1426,21 +1358,6 @@ function formatBR(iso){
 }
 function escapeHtml(s){
   const d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;
-}
-
-// ── ETIQUETAS ──
-const selectedTags=new Set();
-function toggleTag(tag){
-  const btn=document.getElementById('tag-'+tag);
-  if(selectedTags.has(tag)){selectedTags.delete(tag);btn.className='tag-toggle';}
-  else{selectedTags.add(tag);btn.className='tag-toggle selected-'+tag;}
-}
-function resetTags(){
-  selectedTags.clear();
-  ['jessica','juliana','alta','media','baixa'].forEach(t=>{
-    const btn=document.getElementById('tag-'+t);
-    if(btn) btn.className='tag-toggle';
-  });
 }
 
 // ── INIT ──
