@@ -220,6 +220,33 @@
   .progress-input{width:100%;margin-top:5px;accent-color:var(--accent);}
 
   .save-hint{font-size:10px;color:var(--muted);margin-top:14px;text-align:center;}
+
+  /* ANDAMENTOS — registro p/ reunião */
+  .and-select{background:var(--bg);border:1px solid var(--border);border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);padding:5px 8px;outline:none;}
+  .and-entry{padding:8px 10px;border-radius:4px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px;border-left:3px solid var(--border);}
+  .and-entry:last-child{margin-bottom:0;}
+  .and-entry.st-andamento{border-left-color:var(--amber);}
+  .and-entry.st-travado{border-left-color:var(--red);}
+  .and-entry.st-concluido{border-left-color:var(--accent);}
+  .and-entry.st-aguardando_terceiro{border-left-color:var(--blue);}
+  .and-entry-header{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+  .and-badge{font-size:9px;padding:1px 7px;border-radius:20px;white-space:nowrap;font-weight:500;}
+  .and-badge.st-andamento{background:var(--amber-light);color:var(--amber);}
+  .and-badge.st-travado{background:var(--red-light);color:var(--red);}
+  .and-badge.st-concluido{background:var(--accent-light);color:var(--accent);}
+  .and-badge.st-aguardando_terceiro{background:var(--blue-light);color:var(--blue);}
+  .and-entry-ativ{font-size:11px;color:var(--text);font-weight:500;flex:1;}
+  .and-entry-data{font-size:9px;color:var(--muted);}
+  .and-entry-del{background:none;border:none;color:var(--border);font-size:13px;cursor:pointer;padding:0 2px;line-height:1;}
+  .and-entry-del:hover{color:var(--red);}
+  .and-entry-ok{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:0 2px;line-height:1;}
+  .and-entry-ok:hover{color:var(--accent);}
+  .and-entry-texto{font-size:11.5px;color:var(--text);line-height:1.6;}
+  .and-form-row{display:flex;gap:8px;margin-top:2px;}
+  .and-hist-toggle{background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;padding:4px 0;text-align:left;}
+  .and-hist-toggle:hover{color:var(--text);}
+  .and-hist-list{display:none;margin-top:6px;}
+  .and-hist-list.open{display:block;}
 </style>
 </head>
 <body>
@@ -308,6 +335,30 @@
     <div class="diario-add-row">
       <span class="diario-hint">duplo clique para editar · persiste até excluir</span>
       <button class="add-btn" onclick="addDiario()">salvar</button>
+    </div>
+  </div>
+
+  <!-- ANDAMENTOS — registro para reunião -->
+  <div class="col-full">
+    <div class="card">
+      <div class="card-label">
+        Registro para reunião
+        <button class="card-label-btn" onclick="toggleAndHist()" title="ver histórico já reportado">🕘 histórico</button>
+      </div>
+      <div id="and-list"></div>
+      <div class="and-hist-list" id="and-hist-list"></div>
+      <textarea class="diario-add-area" id="and-nota-input" placeholder="O que avançou, onde travou, ou próximo passo...&#10;Ex: Travei na conciliação do cartão porque falta a NF de um lançamento" style="min-height:52px;margin-top:10px;"></textarea>
+      <div class="and-form-row">
+        <input class="add-input" id="and-atividade-input" type="text" placeholder="atividade (opcional, ex: Conciliação cartão Itaú)">
+        <select class="and-select" id="and-status-input">
+          <option value="andamento">🟡 em andamento</option>
+          <option value="travado">🔴 travado</option>
+          <option value="concluido">🟢 concluído</option>
+          <option value="aguardando_terceiro">🔵 aguardando terceiro</option>
+        </select>
+        <button class="add-btn" onclick="addAndamento()">salvar</button>
+      </div>
+      <div class="carry-hint">✓ marca como já reportado na reunião · × exclui o registro</div>
     </div>
   </div>
 
@@ -1286,6 +1337,89 @@ async function initRecorrencias(){
   }
 }
 
+// ── ANDAMENTOS — registro para reunião ──
+const AND_STATUS_LABEL={andamento:'em andamento',travado:'travado',concluido:'concluído',aguardando_terceiro:'aguardando terceiro'};
+const AND_STATUS_EMOJI={andamento:'🟡',travado:'🔴',concluido:'🟢',aguardando_terceiro:'🔵'};
+let andHistOpen=false;
+
+async function initAndamentos(){
+  const pendentes=await supaFetch('andamentos?reportado_em=is.null&order=data.desc,created_at.desc');
+  renderAndamentos(pendentes||[]);
+}
+function renderAndamentos(items){
+  const list=document.getElementById('and-list');
+  if(!list)return;
+  list.innerHTML='';
+  if(!items.length){
+    list.innerHTML='<div class="empty-state">nenhum ponto pendente de reportar</div>';
+    return;
+  }
+  items.forEach(it=>{
+    const div=document.createElement('div');
+    div.className='and-entry st-'+it.status;
+    div.innerHTML=`
+      <div class="and-entry-header">
+        <span class="and-badge st-${it.status}">${AND_STATUS_EMOJI[it.status]||''} ${AND_STATUS_LABEL[it.status]||it.status}</span>
+        <span class="and-entry-ativ">${it.atividade?escapeHtml(it.atividade):''}</span>
+        <span class="and-entry-data">${it.data}</span>
+        <button class="and-entry-ok" title="marcar como reportado" onclick="marcarReportado(${it.id})">✓</button>
+        <button class="and-entry-del" title="excluir" onclick="delAndamento(${it.id})">×</button>
+      </div>
+      <div class="and-entry-texto">${escapeHtml(it.nota)}</div>`;
+    list.appendChild(div);
+  });
+}
+async function refreshAndHist(){
+  const wrap=document.getElementById('and-hist-list');
+  wrap.innerHTML='<div class="empty-state">carregando…</div>';
+  const rows=await supaFetch('andamentos?reportado_em=not.is.null&order=reportado_em.desc&limit=30');
+  wrap.innerHTML='';
+  if(!rows||!rows.length){wrap.innerHTML='<div class="empty-state">nenhum registro reportado ainda</div>';return;}
+  rows.forEach(it=>{
+    const div=document.createElement('div');
+    div.className='and-entry st-'+it.status;
+    div.innerHTML=`
+      <div class="and-entry-header">
+        <span class="and-badge st-${it.status}">${AND_STATUS_EMOJI[it.status]||''} ${AND_STATUS_LABEL[it.status]||it.status}</span>
+        <span class="and-entry-ativ">${it.atividade?escapeHtml(it.atividade):''}</span>
+        <span class="and-entry-data">reportado em ${it.reportado_em}</span>
+      </div>
+      <div class="and-entry-texto">${escapeHtml(it.nota)}</div>`;
+    wrap.appendChild(div);
+  });
+}
+async function toggleAndHist(){
+  andHistOpen=!andHistOpen;
+  const wrap=document.getElementById('and-hist-list');
+  wrap.classList.toggle('open',andHistOpen);
+  if(andHistOpen)refreshAndHist();
+}
+async function addAndamento(){
+  const notaEl=document.getElementById('and-nota-input');
+  const ativEl=document.getElementById('and-atividade-input');
+  const statusEl=document.getElementById('and-status-input');
+  const nota=notaEl.value.trim();
+  if(!nota)return;
+  const atividade=ativEl.value.trim();
+  const status=statusEl.value;
+  await supaFetch('andamentos','POST',{atividade:atividade||null,nota,status,data:TODAY});
+  notaEl.value='';ativEl.value='';statusEl.value='andamento';
+  initAndamentos();
+}
+async function marcarReportado(id){
+  await supaFetch('andamentos?id=eq.'+id,'PATCH',{reportado_em:TODAY});
+  initAndamentos();
+  if(andHistOpen)refreshAndHist();
+}
+async function delAndamento(id){
+  if(!confirm('Excluir este registro?'))return;
+  await supaFetch('andamentos?id=eq.'+id,'DELETE');
+  initAndamentos();
+}
+function escapeHtml(s){
+  const d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;
+}
+
 // ── ETIQUETAS ──
 const selectedTags=new Set();
 function toggleTag(tag){
@@ -1311,6 +1445,7 @@ updateOKRProgress();
 initRoutines();
 initRecorrencias();
 initPend();
+initAndamentos();
 initPomo();
 updatePomoDisplay();
 </script>
