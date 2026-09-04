@@ -752,23 +752,7 @@ function togglePomo(){
 }
 function resetPomo(){clearInterval(ps.interval);ps={...ps,phase:'foco',secs:POMO.FOCO,running:false,interval:null};document.getElementById('pomo-start-btn').textContent='iniciar';updatePomoDisplay();renderDots();}
 
-// ── KRs ──
-supaFetch('okr_progresso').then(rows=>{
-  if(!rows||!rows.length){
-    const krs=ld('krs',{});[3].forEach(n=>{const v=krs['kr'+n];const el=document.getElementById('kr'+n+'-range');if(v!==undefined&&el){el.value=v;updateKR(n,v);}});
-    return;
-  }
-  const krs=ld('krs',{});
-  rows.forEach(r=>{
-    krs['kr'+r.kr_id]=r.progresso;sv('krs',krs);
-    if(r.marcos){
-      const m=Array.isArray(r.marcos)?r.marcos:JSON.parse(r.marcos);
-      sv('kr'+r.kr_id+'_marcos',m);renderMarcos(r.kr_id,m);
-    }
-    const el=document.getElementById('kr'+r.kr_id+'-range');
-    if(el){el.value=r.progresso;updateKR(r.kr_id,r.progresso);}
-  });
-  updateOKRProgress();});
+
 
 // ── DIÁRIO DE ANOTAÇÕES ──
 async function initDiario(){
