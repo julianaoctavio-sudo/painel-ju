@@ -20,7 +20,6 @@
   .header-title em{font-style:italic;color:var(--accent);}
   .header-right{display:flex;align-items:center;gap:12px;}
   .header-date{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
-  .header-semana{font-size:10px;background:var(--accent-light);color:var(--accent);padding:2px 10px;border-radius:20px;border:1px solid var(--accent);}
 
   /* ALERTA PRAZO */
   .alerta-prazo{background:var(--red-light);border:1px solid var(--red);border-radius:6px;padding:10px 18px;margin-bottom:10px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--red);}
@@ -155,27 +154,6 @@
   .tag-toggle.selected-alta{background:#FDEAE6;border-color:#B5290A;color:#B5290A;}
   .tag-toggle.selected-media{background:#FDF0E0;border-color:#B5600A;color:#B5600A;}
   .tag-toggle.selected-baixa{background:#D8EDE4;border-color:#2D6A4F;color:#2D6A4F;}
-  /* POMODORO */
-  .pomo-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 22px;display:flex;align-items:center;gap:22px;}
-  .pomo-left{flex:1;}
-  .pomo-title-sm{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px;}
-  .pomo-phase-txt{font-size:12px;color:var(--text);margin-bottom:8px;}
-  .pomo-ciclos{display:flex;gap:5px;}
-  .ciclo-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--border);transition:all 0.3s;}
-  .ciclo-dot.done{background:var(--accent);border-color:var(--accent);}
-  .ciclo-dot.active{background:var(--amber);border-color:var(--amber);}
-  .pomo-center{display:flex;flex-direction:column;align-items:center;gap:10px;}
-  .pomo-ring{position:relative;width:84px;height:84px;}
-  .pomo-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg);}
-  .pomo-ring-bg{fill:none;stroke:var(--border);stroke-width:3.5;}
-  .pomo-ring-fill{fill:none;stroke-width:3.5;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke 0.3s;}
-  .pomo-time{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:19px;font-weight:300;}
-  .pomo-btns{display:flex;gap:7px;}
-  .pomo-btn{padding:5px 14px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted);}
-  .pomo-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
-  .pomo-right{font-size:10px;color:var(--muted);line-height:1.8;min-width:90px;}
-  .pomo-right strong{color:var(--text);font-size:17px;font-family:'Fraunces',serif;font-weight:300;display:block;}
-
   /* MARCOS */
   .kr-marcos{margin-top:8px;display:flex;flex-direction:column;gap:1px;}
   .marco-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;cursor:pointer;transition:background 0.15s;}
@@ -265,35 +243,6 @@
     <div class="diario-add-row">
       <span class="diario-hint">duplo clique para editar · persiste até excluir</span>
       <button class="add-btn" onclick="addDiario()">salvar</button>
-    </div>
-  </div>
-
-  <!-- POMODORO -->
-  <div class="col-full">
-    <div class="pomo-wrap">
-      <div class="pomo-left">
-        <div class="pomo-title-sm">Pomodoro — bloco de foco</div>
-        <div class="pomo-phase-txt" id="pomo-phase-label">🍅 Foco — 25 min</div>
-        <div class="pomo-ciclos" id="pomo-dots"></div>
-      </div>
-      <div class="pomo-center">
-        <div class="pomo-ring">
-          <svg width="84" height="84" viewBox="0 0 84 84">
-            <circle class="pomo-ring-bg" cx="42" cy="42" r="36"/>
-            <circle class="pomo-ring-fill" id="pomo-ring-fill" cx="42" cy="42" r="36"
-              stroke="var(--accent)" stroke-dasharray="226.19" stroke-dashoffset="0"/>
-          </svg>
-          <div class="pomo-time" id="pomo-time">25:00</div>
-        </div>
-        <div class="pomo-btns">
-          <button class="pomo-btn primary" id="pomo-start-btn" onclick="togglePomo()">iniciar</button>
-          <button class="pomo-btn" onclick="resetPomo()">resetar</button>
-        </div>
-      </div>
-      <div class="pomo-right">
-        <strong id="pomo-ciclo-count">0</strong>ciclos hoje<br><br>
-        🍅 25 min foco<br>☕ 5 min pausa<br>🌿 15 min cada 4
-      </div>
     </div>
   </div>
 
@@ -713,40 +662,6 @@ function sortPend(){
   let items=ld('pend_list',[]);items.sort((a,b)=>a.done-b.done);sv('pend_list',items);renderPend(items);
 }
 
-// ── POMODORO ──
-const POMO={FOCO:25*60,PAUSA:5*60,LONGA:15*60};const CIRCUM=2*Math.PI*36;
-let ps={phase:'foco',secs:POMO.FOCO,running:false,ciclos:0,interval:null};
-function initPomo(){const s=ld('pomo_'+TODAY,null);if(s)ps.ciclos=s.ciclos||0;renderDots();document.getElementById('pomo-ciclo-count').textContent=ps.ciclos;}
-function renderDots(){const c=document.getElementById('pomo-dots');c.innerHTML='';for(let i=0;i<4;i++){const d=document.createElement('div');d.className='ciclo-dot'+(i<ps.ciclos%4?' done':i===ps.ciclos%4&&ps.phase==='foco'&&ps.secs<POMO.FOCO?' active':'');c.appendChild(d);}}
-function updatePomoDisplay(){
-  const m=Math.floor(ps.secs/60).toString().padStart(2,'0');const s=(ps.secs%60).toString().padStart(2,'0');
-  document.getElementById('pomo-time').textContent=m+':'+s;
-  const total=ps.phase==='foco'?POMO.FOCO:ps.phase==='pausa'?POMO.PAUSA:POMO.LONGA;
-  const fill=document.getElementById('pomo-ring-fill');
-  fill.style.strokeDashoffset=CIRCUM*(1-ps.secs/total);
-  fill.style.stroke=ps.phase==='foco'?'var(--accent)':ps.phase==='pausa'?'var(--blue)':'var(--amber)';
-  document.getElementById('pomo-phase-label').textContent={foco:'🍅 Foco — 25 min',pausa:'☕ Pausa curta — 5 min',longa:'🌿 Pausa longa — 15 min'}[ps.phase];
-}
-function togglePomo(){
-  if(ps.running){clearInterval(ps.interval);ps.running=false;document.getElementById('pomo-start-btn').textContent='retomar';}
-  else{
-    ps.running=true;document.getElementById('pomo-start-btn').textContent='pausar';
-    ps.interval=setInterval(()=>{
-      if(ps.secs>0){ps.secs--;updatePomoDisplay();renderDots();}
-      else{
-        clearInterval(ps.interval);ps.running=false;
-        if(ps.phase==='foco'){ps.ciclos++;document.getElementById('pomo-ciclo-count').textContent=ps.ciclos;sv('pomo_'+TODAY,{ciclos:ps.ciclos});ps.phase=ps.ciclos%4===0?'longa':'pausa';ps.secs=ps.phase==='longa'?POMO.LONGA:POMO.PAUSA;}
-        else{ps.phase='foco';ps.secs=POMO.FOCO;}
-        document.getElementById('pomo-start-btn').textContent='iniciar';updatePomoDisplay();renderDots();
-        try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.3,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);o.start(ctx.currentTime);o.stop(ctx.currentTime+0.8);}catch(e){}
-      }
-    },1000);
-  }
-}
-function resetPomo(){clearInterval(ps.interval);ps={...ps,phase:'foco',secs:POMO.FOCO,running:false,interval:null};document.getElementById('pomo-start-btn').textContent='iniciar';updatePomoDisplay();renderDots();}
-
-
-
 // ── DIÁRIO DE ANOTAÇÕES ──
 async function initDiario(){
   try{
@@ -770,21 +685,8 @@ function renderDiario(){
     div.className='diario-entry';
     div.innerHTML='<div class="diario-entry-header"><span class="diario-entry-data">'+n.data+' às '+n.hora+'</span><button class="diario-entry-del" onclick="delDiario('+origIdx+')">×</button></div><div class="diario-entry-texto" id="diario-txt-'+origIdx+'">'+n.texto+'</div>';
     const txt=div.querySelector('.diario-entry-texto');
-    txt.addEventListener('dblclick',()=>{
-      txt.contentEditable='true';txt.focus();
-      const r=document.createRange();r.selectNodeContents(txt);
-      const s=window.getSelection();s.removeAllRanges();s.addRange(r);
-    });
-    txt.addEventListener('blur',()=>{
-      txt.contentEditable='false';
-      const ns=ld('diario_notas',[]);
-      const novo=txt.textContent.trim();
-      if(novo&&novo!==ns[origIdx].texto){
-        ns[origIdx].texto=novo;sv('diario_notas',ns);
-        saveDiarioSupabase(ns);
-      }
-      renderDiario();
-    });
+    txt.addEventListener('dblclick',()=>{txt.contentEditable='true';txt.focus();const r=document.createRange();r.selectNodeContents(txt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);});
+    txt.addEventListener('blur',()=>{txt.contentEditable='false';const ns=ld('diario_notas',[]);const novo=txt.textContent.trim();if(novo&&novo!==ns[origIdx].texto){ns[origIdx].texto=novo;sv('diario_notas',ns);saveDiarioSupabase(ns);}renderDiario();});
     txt.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();txt.blur();}});
     list.appendChild(div);
   });
@@ -884,8 +786,6 @@ initDiario();
 initRoutines();
 initRecorrencias();
 initPend();
-initPomo();
-updatePomoDisplay();
 </script>
 </body>
 </html>
