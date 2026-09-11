@@ -63,16 +63,6 @@
   .progress-track{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
   .progress-track-fill{height:100%;border-radius:4px;transition:width 0.4s ease,background 0.4s ease;}
   .progress-pct{font-size:13px;font-weight:500;min-width:36px;text-align:right;}
-  .progress-okr{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:11px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;}
-  .okr-bars{flex:1;display:flex;flex-direction:column;gap:4px;}
-  .okr-bar-row{display:flex;align-items:center;gap:8px;}
-  .okr-bar-name{font-size:9px;color:var(--muted);width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
-  .okr-bar-track{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
-  .okr-bar-fill{height:100%;border-radius:2px;transition:width 0.4s ease;}
-  .okr-bar-pct{font-size:9px;color:var(--muted);width:26px;text-align:right;flex-shrink:0;}
-  .okr-total{font-family:'Fraunces',serif;font-size:20px;font-weight:300;min-width:44px;text-align:right;}
-
-  /* GRID */
   .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
   .col-full{grid-column:1/-1;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 20px;}
@@ -150,6 +140,23 @@
   .diario-add-area::placeholder{color:var(--border);}
   .diario-add-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
   .diario-hint{font-size:9px;color:var(--muted);}
+
+  /* ETIQUETAS PENDÊNCIAS */
+  .pend-tags{display:flex;gap:4px;flex-wrap:wrap;align-self:center;flex-shrink:0;}
+  .etiqueta{font-size:9px;padding:1px 7px;border-radius:20px;white-space:nowrap;font-weight:500;}
+  .etiqueta-jessica{background:#FFE8D6;color:#BF4F00;}
+  .etiqueta-jessica::before{content:'●';margin-right:4px;color:#FF6D00;}
+  .etiqueta-juliana{background:#EDE6FA;color:#6B4FA0;}
+  .etiqueta-alta{background:#FDEAE6;color:#B5290A;}
+  .etiqueta-media{background:#FDF0E0;color:#B5600A;}
+  .etiqueta-baixa{background:#D8EDE4;color:#2D6A4F;}
+  .tag-selectors{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+  .tag-toggle{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:'DM Mono',monospace;color:var(--muted);transition:all 0.15s;}
+  .tag-toggle.selected-jessica{background:#FFE8D6;border-color:#BF4F00;color:#BF4F00;}
+  .tag-toggle.selected-juliana{background:#EDE6FA;border-color:#6B4FA0;color:#6B4FA0;}
+  .tag-toggle.selected-alta{background:#FDEAE6;border-color:#B5290A;color:#B5290A;}
+  .tag-toggle.selected-media{background:#FDF0E0;border-color:#B5600A;color:#B5600A;}
+  .tag-toggle.selected-baixa{background:#D8EDE4;border-color:#2D6A4F;color:#2D6A4F;}
   /* POMODORO */
   .pomo-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 22px;display:flex;align-items:center;gap:22px;}
   .pomo-left{flex:1;}
@@ -210,29 +217,8 @@
 <div class="header">
   <div class="header-title">Painel do dia — <em>Ju</em></div>
   <div class="header-right">
-    <span class="header-semana" id="semana-ciclo"></span>
-    <span class="header-date" id="date-display"></span>
+      <span class="header-date" id="date-display"></span>
   </div>
-</div>
-
-<!-- FOCO ESTRATÉGICO -->
-<div class="kr-hoje" id="kr-hoje-block">
-  <div style="font-size:18px;flex-shrink:0">🎯</div>
-  <div style="flex:1">
-    <div class="kr-hoje-label">Foco estratégico de hoje</div>
-    <div class="kr-hoje-text" id="kr-hoje-text">—</div>
-    <div class="kr-hoje-marco" id="kr-hoje-marco"></div>
-  </div>
-  <div class="kr-hoje-dias" id="kr-hoje-dias">—<span id="kr-hoje-dias-label"></span></div>
-</div>
-
-<!-- ALERTAS DE PRAZO -->
-<div id="alertas-container"></div>
-
-<!-- COUNTDOWN -->
-<div class="countdown-block">
-  <div class="section-label">Cronograma de entregas</div>
-  <div class="countdown-grid" id="countdown-grid"></div>
 </div>
 
 <!-- PROGRESSO DO DIA -->
@@ -240,13 +226,6 @@
   <span class="progress-geral-label">progresso do dia</span>
   <div class="progress-track"><div class="progress-track-fill" id="prog-fill" style="width:0%"></div></div>
   <span class="progress-pct" id="prog-pct" style="color:var(--muted)">0%</span>
-</div>
-
-<!-- PROGRESSO DOS OKRs -->
-<div class="progress-okr">
-  <span class="progress-geral-label">progresso<br>OKRs</span>
-  <div class="okr-bars" id="okr-bars"></div>
-  <div class="okr-total" id="okr-total" style="color:var(--muted)">0%</div>
 </div>
 
 <div class="grid">
@@ -271,6 +250,14 @@
     <div class="add-row">
       <input class="add-input" id="add-input" type="text" placeholder="+ adicionar pendência..." onkeydown="if(event.key==='Enter')addPend()">
       <button class="add-btn" onclick="addPend()">adicionar</button>
+    </div>
+    <div class="tag-selectors">
+      <button class="tag-toggle" id="tag-jessica" onclick="toggleTag('jessica')">Jéssica</button>
+      <button class="tag-toggle" id="tag-juliana" onclick="toggleTag('juliana')">🟣 Juliana</button>
+      <span style="width:1px;background:var(--border);margin:0 2px;"></span>
+      <button class="tag-toggle" id="tag-alta" onclick="toggleTag('alta')">🔴 Alta</button>
+      <button class="tag-toggle" id="tag-media" onclick="toggleTag('media')">🟡 Média</button>
+      <button class="tag-toggle" id="tag-baixa" onclick="toggleTag('baixa')">🟢 Baixa</button>
     </div>
     <div class="carry-hint">↩ não concluídas aparecem amanhã automaticamente</div>
   </div>
@@ -315,119 +302,6 @@
     </div>
   </div>
 
-  <!-- OKRs 2026 -->
-  <div class="kr-section col-full">
-    <div class="section-label">OKRs 2026</div>
-    <div class="kr-item">
-      <div class="kr-header"><span class="kr-priority p1">P1</span><div class="kr-text">Revisão orçamento Q2/Q3 — CTO e CEO</div><span class="kr-badge badge-red">urgente</span></div>
-      <div class="kr-prazo">ciclo completo: validação → 19 mai → 26 mai → 05 jun</div>
-      <div class="kr-marcos" id="kr1-marcos">
-        <div class="marco-item" data-kr="1" data-idx="0" onclick="toggleMarco(1,0)"><div class="marco-check" id="kr1-m0"></div><span class="marco-text">Concluir e validar revisão Q2/Q3 com liderança</span><span class="marco-prazo">pré-requisito</span></div>
-        <div class="marco-item" data-kr="1" data-idx="1" onclick="toggleMarco(1,1)"><div class="marco-check" id="kr1-m1"></div><span class="marco-text">Apresentar para CTO e CEO</span><span class="marco-prazo">19 mai</span></div>
-        <div class="marco-item" data-kr="1" data-idx="2" onclick="toggleMarco(1,2)"><div class="marco-check" id="kr1-m2"></div><span class="marco-text">Entregar planilha orçado x realizado para cada líder</span><span class="marco-prazo" style="background:var(--red-light);color:var(--red);font-weight:600;">hoje — 26 mai</span></div>
-        <div class="marco-item" data-kr="1" data-idx="3" onclick="toggleMarco(1,3)"><div class="marco-check" id="kr1-m3"></div><span class="marco-text">Lançar projeções Q2/Q3 no Nibo (Performance e Fiscal)</span><span class="marco-prazo">05 jun</span></div>
-      </div>
-      <div class="kr-progress-bar" style="margin-top:8px"><div class="kr-progress-fill fill-red" id="kr1-fill" style="width:0%"></div></div>
-      <div class="kr-progress-label"><span>marcos concluídos</span><span id="kr1-pct">0%</span></div>
-      <button class="kr-nota-toggle" onclick="toggleKrNota(1)">📝 <span id="kr1-nota-lbl">notas</span></button>
-      <div class="kr-nota-wrap" id="kr1-nota-wrap">
-        <div class="kr-nota-list" id="kr1-nota-list"></div>
-        <div class="kr-nota-add">
-          <input class="kr-nota-input" id="kr1-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(1)">
-          <button class="kr-nota-btn" onclick="addKrNota(1)">salvar</button>
-        </div>
-      </div>
-    </div>
-    <div class="kr-item">
-      <div class="kr-header"><span class="kr-priority p1">P1</span><div class="kr-text">3 apresentações para CTO e CEO — DRE, DFC, indicadores, desvios</div><span class="kr-badge badge-amber">mensal</span></div>
-      <div class="kr-prazo">3 entregas fixas · mín. 3 melhorias por apresentação</div>
-      <div class="kr-marcos" id="kr4-marcos">
-        <div class="marco-item" data-kr="4" data-idx="0" onclick="toggleMarco(4,0)"><div class="marco-check" id="kr4-m0"></div><span class="marco-text">1ª apresentação — DRE, DFC, indicadores, desvios e recomendações</span><span class="marco-prazo">10 jun</span></div>
-        <div class="marco-item" data-kr="4" data-idx="1" onclick="toggleMarco(4,1)"><div class="marco-check" id="kr4-m1"></div><span class="marco-text">2ª apresentação — DRE, DFC, indicadores, desvios e recomendações</span><span class="marco-prazo">10 jul</span></div>
-        <div class="marco-item" data-kr="4" data-idx="2" onclick="toggleMarco(4,2)"><div class="marco-check" id="kr4-m2"></div><span class="marco-text">3ª apresentação — DRE, DFC, indicadores, desvios e recomendações</span><span class="marco-prazo">10 ago</span></div>
-      </div>
-      <div class="kr-progress-bar" style="margin-top:8px"><div class="kr-progress-fill fill-amber" id="kr4-fill" style="width:0%"></div></div>
-      <div class="kr-progress-label"><span>marcos concluídos</span><span id="kr4-pct">0%</span></div>
-      <button class="kr-nota-toggle" onclick="toggleKrNota(4)">📝 <span id="kr4-nota-lbl">notas</span></button>
-      <div class="kr-nota-wrap" id="kr4-nota-wrap">
-        <div class="kr-nota-list" id="kr4-nota-list"></div>
-        <div class="kr-nota-add">
-          <input class="kr-nota-input" id="kr4-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(4)">
-          <button class="kr-nota-btn" onclick="addKrNota(4)">salvar</button>
-        </div>
-      </div>
-    </div>
-    <div class="kr-item">
-      <div class="kr-header"><span class="kr-priority p2">P2</span><div class="kr-text">Projeção DFC e DRE semanal ao líder — variação orçado x realizado, riscos e plano de ação</div><span class="kr-badge badge-amber">semanal</span></div>
-      <div class="kr-prazo">14 apresentações · 28 mai → 27 ago · toda quarta-feira</div>
-      <div class="kr-marcos" id="kr2-marcos">
-        <div class="marco-item" data-kr="2" data-idx="0" onclick="toggleMarco(2,0)"><div class="marco-check" id="kr2-m0"></div><span class="marco-text">Apresentação 1 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">28 mai</span></div>
-        <div class="marco-item" data-kr="2" data-idx="1" onclick="toggleMarco(2,1)"><div class="marco-check" id="kr2-m1"></div><span class="marco-text">Apresentação 2 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">04 jun</span></div>
-        <div class="marco-item" data-kr="2" data-idx="2" onclick="toggleMarco(2,2)"><div class="marco-check" id="kr2-m2"></div><span class="marco-text">Apresentação 3 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">11 jun</span></div>
-        <div class="marco-item" data-kr="2" data-idx="3" onclick="toggleMarco(2,3)"><div class="marco-check" id="kr2-m3"></div><span class="marco-text">Apresentação 4 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">18 jun</span></div>
-        <div class="marco-item" data-kr="2" data-idx="4" onclick="toggleMarco(2,4)"><div class="marco-check" id="kr2-m4"></div><span class="marco-text">Apresentação 5 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">25 jun</span></div>
-        <div class="marco-item" data-kr="2" data-idx="5" onclick="toggleMarco(2,5)"><div class="marco-check" id="kr2-m5"></div><span class="marco-text">Apresentação 6 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">02 jul</span></div>
-        <div class="marco-item" data-kr="2" data-idx="6" onclick="toggleMarco(2,6)"><div class="marco-check" id="kr2-m6"></div><span class="marco-text">Apresentação 7 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">09 jul</span></div>
-        <div class="marco-item" data-kr="2" data-idx="7" onclick="toggleMarco(2,7)"><div class="marco-check" id="kr2-m7"></div><span class="marco-text">Apresentação 8 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">16 jul</span></div>
-        <div class="marco-item" data-kr="2" data-idx="8" onclick="toggleMarco(2,8)"><div class="marco-check" id="kr2-m8"></div><span class="marco-text">Apresentação 9 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">23 jul</span></div>
-        <div class="marco-item" data-kr="2" data-idx="9" onclick="toggleMarco(2,9)"><div class="marco-check" id="kr2-m9"></div><span class="marco-text">Apresentação 10 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">30 jul</span></div>
-        <div class="marco-item" data-kr="2" data-idx="10" onclick="toggleMarco(2,10)"><div class="marco-check" id="kr2-m10"></div><span class="marco-text">Apresentação 11 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">06 ago</span></div>
-        <div class="marco-item" data-kr="2" data-idx="11" onclick="toggleMarco(2,11)"><div class="marco-check" id="kr2-m11"></div><span class="marco-text">Apresentação 12 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">13 ago</span></div>
-        <div class="marco-item" data-kr="2" data-idx="12" onclick="toggleMarco(2,12)"><div class="marco-check" id="kr2-m12"></div><span class="marco-text">Apresentação 13 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">20 ago</span></div>
-        <div class="marco-item" data-kr="2" data-idx="13" onclick="toggleMarco(2,13)"><div class="marco-check" id="kr2-m13"></div><span class="marco-text">Apresentação 14 — DFC/DRE, variação orçado x realizado, riscos e plano de ação</span><span class="marco-prazo">27 ago</span></div>
-      </div>
-      <div class="kr-progress-bar" style="margin-top:10px"><div class="kr-progress-fill fill-amber" id="kr2-fill" style="width:0%"></div></div>
-      <div class="kr-progress-label"><span>apresentações concluídas</span><span id="kr2-pct">0%</span></div>
-      <button class="kr-nota-toggle" onclick="toggleKrNota(2)">📝 <span id="kr2-nota-lbl">notas</span></button>
-      <div class="kr-nota-wrap" id="kr2-nota-wrap">
-        <div class="kr-nota-list" id="kr2-nota-list"></div>
-        <div class="kr-nota-add">
-          <input class="kr-nota-input" id="kr2-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(2)">
-          <button class="kr-nota-btn" onclick="addKrNota(2)">salvar</button>
-        </div>
-      </div>
-    </div>
-    <div class="kr-item">
-      <div class="kr-header"><span class="kr-priority p2">P2</span><div class="kr-text">Definir 8 datas de pagamento e renegociar 60% dos fornecedores</div><span class="kr-badge badge-amber">31 jul</span></div>
-      <div class="kr-prazo">prazo: 31 jul · alta dependência de terceiros</div>
-      <div class="kr-marcos" id="kr5-marcos">
-        <div class="marco-item" data-kr="5" data-idx="0" onclick="toggleMarco(5,0)"><div class="marco-check" id="kr5-m0"></div><span class="marco-text">Mapear todos os fornecedores ativos com datas e valores</span><span class="marco-prazo">etapa 1</span></div>
-        <div class="marco-item" data-kr="5" data-idx="1" onclick="toggleMarco(5,1)"><div class="marco-check" id="kr5-m1"></div><span class="marco-text">Montar planilha com dados de pagamento</span><span class="marco-prazo">etapa 2</span></div>
-        <div class="marco-item" data-kr="5" data-idx="2" onclick="toggleMarco(5,2)"><div class="marco-check" id="kr5-m2"></div><span class="marco-text">Contato com fornecedores (e-mail ou telefone)</span><span class="marco-prazo">etapa 3</span></div>
-        <div class="marco-item" data-kr="5" data-idx="3" onclick="toggleMarco(5,3)"><div class="marco-check" id="kr5-m3"></div><span class="marco-text">Renegociar datas — meta: 60% concluídos</span><span class="marco-prazo">etapa 4</span></div>
-        <div class="marco-item" data-kr="5" data-idx="4" onclick="toggleMarco(5,4)"><div class="marco-check" id="kr5-m4"></div><span class="marco-text">Atualizar datas no sistema Nibo</span><span class="marco-prazo">etapa 5</span></div>
-      </div>
-      <div class="kr-progress-bar" style="margin-top:10px"><div class="kr-progress-fill fill-amber" id="kr5-fill" style="width:0%"></div></div>
-      <div class="kr-progress-label"><span>marcos concluídos</span><span id="kr5-pct">0%</span></div>
-      <button class="kr-nota-toggle" onclick="toggleKrNota(5)">📝 <span id="kr5-nota-lbl">notas</span></button>
-      <div class="kr-nota-wrap" id="kr5-nota-wrap">
-        <div class="kr-nota-list" id="kr5-nota-list"></div>
-        <div class="kr-nota-add">
-          <input class="kr-nota-input" id="kr5-nota-input" placeholder="Adicionar observação..." onkeydown="if(event.key==='Enter')addKrNota(5)">
-          <button class="kr-nota-btn" onclick="addKrNota(5)">salvar</button>
-        </div>
-      </div>
-    </div>
-    <div class="kr-item">
-      <div class="kr-header"><span class="kr-priority p3">P3</span><div class="kr-text">Entregar planilha automatizada DFC e DRE de agosto (orçado vs realizado)</div><span class="kr-badge badge-amber">30 ago</span></div>
-      <div class="kr-prazo">prazo: 30 ago · trabalho contínuo · atualiza o progresso conforme avança</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-        <span style="font-size:10px;color:var(--muted);white-space:nowrap;">% concluído</span>
-        <input type="range" class="progress-input" id="kr3-range" min="0" max="100" value="10" step="5" oninput="updateKR(3,this.value)" style="flex:1;margin-top:0;">
-        <span id="kr3-pct" style="font-size:12px;font-weight:500;min-width:32px;text-align:right;">10%</span>
-      </div>
-      <div class="kr-progress-bar" style="margin-top:6px"><div class="kr-progress-fill fill-amber" id="kr3-fill" style="width:10%"></div></div>
-      <button class="kr-nota-toggle" onclick="toggleKrNota(3)">📝 <span id="kr3-nota-lbl">notas — registre seu avanço aqui</span></button>
-      <div class="kr-nota-wrap" id="kr3-nota-wrap">
-        <div class="kr-nota-list" id="kr3-nota-list"></div>
-        <div class="kr-nota-add">
-          <input class="kr-nota-input" id="kr3-nota-input" placeholder="Ex: Finalizei estrutura base das abas, falta automação das fórmulas..." onkeydown="if(event.key==='Enter')addKrNota(3)">
-          <button class="kr-nota-btn" onclick="addKrNota(3)">salvar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>
 <div class="save-hint">dica: salve o arquivo e fixe a aba no navegador (clique direito → fixar aba) · Netlify + Supabase em breve</div>
 
@@ -441,22 +315,28 @@ document.getElementById('date-display').textContent=DAYS[now.getDay()]+', '+now.
 // parse date locally (avoid UTC offset issues)
 function parseLocalDate(str){const[y,m,d]=str.split('-').map(Number);const dt=new Date(y,m-1,d);dt.setHours(0,0,0,0);return dt;}
 
-// semana do ciclo (25/05 → 30/08)
-const CICLO_START=parseLocalDate('2026-05-25');
-const semanaNum=Math.max(1,Math.ceil(((now-CICLO_START)/(1000*60*60*24*7))+1));
-document.getElementById('semana-ciclo').textContent='semana '+semanaNum+' de 14';
 
 // ── SUPABASE ──
 const SUPA_URL='https://jftzmonfswdjchrclvmq.supabase.co';
 const SUPA_KEY='sb_publishable_Ti0pBfSREN-mJnf1XKrkhg_8BDexZoH';
 async function supaFetch(path,method='GET',body=null){
   try{
-    const opts={method,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'}};
+    const opts={method,headers:{
+      'apikey':SUPA_KEY,
+      'Authorization':'Bearer '+SUPA_KEY,
+      'Content-Type':'application/json',
+      'Prefer':'return=representation',
+      'Range':'0-999'  // busca até 1000 registros
+    }};
     if(body)opts.body=JSON.stringify(body);
     const res=await fetch(SUPA_URL+'/rest/v1/'+path,opts);
-    if(!res.ok)return null;
-    const txt=await res.text();return txt?JSON.parse(txt):null;
-  }catch(e){return null;}
+    if(!res.ok){
+      const err=await res.text();
+      console.error('supaFetch error',method,path,res.status,err);
+      return null;
+    }
+    const txt=await res.text();return txt?JSON.parse(txt):[];
+  }catch(e){console.error('supaFetch exception:',e);return null;}
 }
 
 function ld(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
@@ -470,24 +350,6 @@ function logHist(texto, tipo){
 }
 
 // ── PROGRESSO ──
-function updateOKRProgress(){
-  const krDefs=[{id:1,name:'Orçamento Q2/Q3'},{id:4,name:'Apresentações CTO/CEO'},{id:2,name:'DFC/DRE semanal'},{id:5,name:'Fornecedores'},{id:3,name:'Planilha DFC/DRE'}];
-  const krs=ld('krs',{});
-  const container=document.getElementById('okr-bars');
-  if(!container)return;
-  container.innerHTML='';
-  let total=0;
-  krDefs.forEach(k=>{
-    const pct=krs['kr'+k.id]||0;total+=pct;
-    const clr=pct<30?'var(--red)':pct<70?'var(--amber)':'var(--accent)';
-    const row=document.createElement('div');row.className='okr-bar-row';
-    row.innerHTML=`<span class="okr-bar-name">${k.name}</span><div class="okr-bar-track"><div class="okr-bar-fill" style="width:${pct}%;background:${clr}"></div></div><span class="okr-bar-pct">${pct}%</span>`;
-    container.appendChild(row);
-  });
-  const avg=Math.round(total/krDefs.length);
-  const el=document.getElementById('okr-total');
-  if(el){el.textContent=avg+'%';el.style.color=avg<30?'var(--red)':avg<70?'var(--amber)':'var(--accent)';}
-}
 function updateProg(){
   const all=document.querySelectorAll('.routine-item,.pend-item').length;
   const done=document.querySelectorAll('.routine-item.done,.pend-item.done').length;
@@ -495,123 +357,6 @@ function updateProg(){
   document.getElementById('prog-fill').style.cssText='width:'+pct+'%;background:'+(pct<30?'var(--red)':pct<70?'var(--amber)':'var(--accent)');
   document.getElementById('prog-pct').textContent=pct+'%';
   document.getElementById('prog-pct').style.color=pct<30?'var(--red)':pct<70?'var(--amber)':'var(--accent)';
-}
-
-// ── ALERTAS DE PRAZO ──
-const KRS=[
-  {id:1,label:'Orçamento Q2/Q3 — CTO e CEO',prazo:'2026-06-05',p:'p1',
-   marcos:['Concluir e validar revisão Q2/Q3 com liderança','Apresentar para CTO e CEO','Entregar planilha orçado x realizado para cada líder','Lançar projeções Q2/Q3 no Nibo (Performance e Fiscal)'],
-   marcosPrazos:['2026-05-19','2026-05-19','2026-05-26','2026-06-05']},
-  {id:4,label:'Apresentações CTO/CEO — jun/jul/ago',prazo:'2026-06-10',p:'p1',
-   marcos:['1ª apresentação (jun)','2ª apresentação (jul)','3ª apresentação (ago)'],
-   marcosPrazos:['2026-06-10','2026-07-10','2026-08-10']},
-  {id:2,label:'Projeção DFC e DRE semanal ao líder',prazo:'2026-08-27',p:'p2',marcos:['Apresentação 1 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 2 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 3 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 4 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 5 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 6 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 7 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 8 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 9 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 10 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 11 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 12 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 13 — DFC/DRE, variação orçado x realizado, riscos e plano de ação', 'Apresentação 14 — DFC/DRE, variação orçado x realizado, riscos e plano de ação'],marcosPrazos:['2026-05-28', '2026-06-04', '2026-06-11', '2026-06-18', '2026-06-25', '2026-07-02', '2026-07-09', '2026-07-16', '2026-07-23', '2026-07-30', '2026-08-06', '2026-08-13', '2026-08-20', '2026-08-27']},
-  {id:5,label:'Renegociar 60% fornecedores',prazo:'2026-07-31',p:'p2',marcos:['Mapear fornecedores ativos','Montar planilha de pagamento','Contato com fornecedores','Renegociar datas (meta: 60%)','Atualizar datas no Nibo'],marcosPrazos:['2026-07-31','2026-07-31','2026-07-31','2026-07-31','2026-07-31']},
-  {id:3,label:'Planilha automatizada DFC/DRE agosto',prazo:'2026-08-30',p:'p3',marcos:[],marcosPrazos:[]},
-];
-function initAlertas(){
-  const hoje=new Date();hoje.setHours(0,0,0,0);
-  const container=document.getElementById('alertas-container');
-  container.innerHTML='';
-  // descobre qual KR é o foco estratégico pra não duplicar alerta
-  let focoId=null;
-  const candidatos=[];
-  KRS.forEach(kr=>{
-    const prazo=parseLocalDate(kr.prazo);
-    const dias=Math.round((prazo-hoje)/(1000*60*60*24));
-    const krState=ld('kr'+kr.id+'_marcos',kr.marcos.map(()=>false));
-    const concluido=kr.marcos.length>0?krState.every(Boolean):(ld('krs',{})['kr'+kr.id]||0)>=100;
-    if(!concluido&&dias>=0){
-      const proximoIdx=kr.marcos.findIndex((_,i)=>!krState[i]);
-      const marcoPrazo=kr.marcosPrazos&&proximoIdx>=0?kr.marcosPrazos[proximoIdx]:null;
-      const marcoDias=marcoPrazo?Math.round((parseLocalDate(marcoPrazo)-hoje)/(1000*60*60*24)):dias;
-      candidatos.push({id:kr.id,label:kr.label,marcoDias,p:kr.p});
-    }
-  });
-  candidatos.sort((a,b)=>a.p<b.p?-1:a.p>b.p?1:a.marcoDias-b.marcoDias);
-  if(candidatos.length) focoId=candidatos[0].id;
-
-  KRS.forEach(kr=>{
-    const prazo=parseLocalDate(kr.prazo);
-    const krState=ld('kr'+kr.id+'_marcos',kr.marcos.map(()=>false));
-    const concluido=kr.marcos.length>0?krState.every(Boolean):(ld('krs',{})['kr'+kr.id]||0)>=100;
-    // pega prazo do próximo marco pendente
-    const proximoIdx=kr.marcos.findIndex((_,i)=>!krState[i]);
-    const marcoPrazo=kr.marcosPrazos&&proximoIdx>=0?kr.marcosPrazos[proximoIdx]:null;
-    const prazoEfetivo=marcoPrazo?parseLocalDate(marcoPrazo):prazo;
-    const dias=Math.round((prazoEfetivo-hoje)/(1000*60*60*24));
-    // não mostra alerta se: concluído, já é o foco estratégico, ou prazo > 7 dias
-    if(concluido||kr.id===focoId||dias<0||dias>7) return;
-    const div=document.createElement('div');
-    div.className='alerta-prazo'+(dias<=3?'':' amber');
-    div.innerHTML='⚠️ <strong>'+kr.label+'</strong> — prazo em '+(dias===0?'hoje':dias===1?'amanhã':dias+' dias');
-    container.appendChild(div);
-  });
-}
-
-// ── COUNTDOWN + KR DO DIA ──
-function initCountdown(){
-  const grid=document.getElementById('countdown-grid');
-  grid.innerHTML='';
-  const hoje=new Date();hoje.setHours(0,0,0,0);
-  let krHoje=null;
-  // coleta todos os KRs não concluídos com seus próximos marcos
-  const candidatos=[];
-  KRS.forEach(kr=>{
-    const prazo=parseLocalDate(kr.prazo);
-    const dias=Math.round((prazo-hoje)/(1000*60*60*24));
-    const inicio=new Date('2026-01-01');
-    const pct=Math.min(100,Math.max(0,Math.round(((hoje-inicio)/(prazo-inicio))*100)));
-    const status=dias<0?'vencido':dias<=7?'urgente':dias<=30?'atencao':'ok';
-    const barClr=status==='urgente'||status==='vencido'?'var(--red)':status==='atencao'?'var(--amber)':'var(--accent)';
-    const sublabel=dias<0?'VENCIDO':dias===0?'HOJE':dias===1?'AMANHÃ':'DIAS RESTANTES';
-    const prazoFmt=prazo.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
-    const el=document.createElement('div');
-    grid.appendChild(el);
-        const krState=ld('kr'+kr.id+'_marcos',kr.marcos.map(()=>false));
-    const concluido=kr.marcos.length>0?krState.every(Boolean):(ld('krs',{})['kr'+kr.id]||0)>=100;
-    // para countdown: usa prazo do próximo marco pendente se disponível
-    const proximoIdx=kr.marcos.findIndex((_,i)=>!krState[i]);
-    const proximoMarcoPrazo=kr.marcosPrazos&&proximoIdx>=0?kr.marcosPrazos[proximoIdx]:null;
-    const prazoEfetivo=proximoMarcoPrazo?new Date(proximoMarcoPrazo+'T12:00:00'):prazo;
-    const diasEfetivo=Math.round((prazoEfetivo-hoje)/(1000*60*60*24));
-    const statusEfetivo=diasEfetivo<0?'vencido':diasEfetivo<=7?'urgente':diasEfetivo<=30?'atencao':'ok';
-    const barClrEfetivo=statusEfetivo==='urgente'||statusEfetivo==='vencido'?'var(--red)':statusEfetivo==='atencao'?'var(--amber)':'var(--accent)';
-    const sublabelEfetivo=diasEfetivo<0?'ATRASADO':diasEfetivo===0?'HOJE':diasEfetivo===1?'AMANHÃ':'DIAS RESTANTES';
-    const prazoFmtEfetivo=prazoEfetivo.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
-    // label extra pra KRs com próximo marco
-    const marcoLabel=proximoMarcoPrazo&&kr.marcos.length>4?'próxima: '+prazoEfetivo.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',weekday:'short'}):'';
-    el.className='cd-item '+statusEfetivo;
-    el.innerHTML='<div class="cd-p '+kr.p+'">'+kr.p.toUpperCase()+'</div><div class="cd-num '+statusEfetivo+'">'+(diasEfetivo<0?Math.abs(diasEfetivo):diasEfetivo)+'</div><div class="cd-sublabel">'+sublabelEfetivo+'</div><div class="cd-name">'+kr.label+(marcoLabel?'<br><span style="font-size:9px;color:var(--muted)">'+marcoLabel+'</span>':'')+'</div><div class="cd-bar"><div class="cd-bar-fill" style="width:'+pct+'%;background:'+barClrEfetivo+'"></div></div><div class="cd-prazo">prazo: '+prazoFmtEfetivo+'</div>';
-    if(!concluido&&dias>=0){
-      const proximoMarco=proximoIdx>=0?kr.marcos[proximoIdx]:null;
-      const marcoDias=proximoMarcoPrazo?diasEfetivo:dias;
-      candidatos.push({label:kr.label,marco:proximoMarco,dias,status,marcoDias,marcoPrazo:proximoMarcoPrazo,p:kr.p});
-    }
-  });
-  // ordena por prazo do próximo marco (mais urgente primeiro), priorizando P1
-  candidatos.sort((a,b)=>{
-    if(a.p!==b.p) return a.p<b.p?-1:1; // P1 antes de P2/P3
-    return a.marcoDias-b.marcoDias; // dentro do mesmo nível, mais urgente primeiro
-  });
-  if(candidatos.length) krHoje=candidatos[0];
-  const block=document.getElementById('kr-hoje-block');
-  if(krHoje){
-    const cor=krHoje.marcoDias<=0?'var(--red)':krHoje.marcoDias<=7?'var(--amber)':'var(--accent)';
-    const corLight=krHoje.marcoDias<=0?'var(--red-light)':krHoje.marcoDias<=7?'var(--amber-light)':'var(--accent-light)';
-    block.style.background=corLight;block.style.borderColor=cor;
-    document.querySelector('.kr-hoje-label').style.color=cor;
-    document.getElementById('kr-hoje-text').textContent=krHoje.label;
-    const diasLabel=krHoje.marcoDias<0?'atrasado':krHoje.marcoDias===0?'hoje!':krHoje.marcoDias===1?'amanhã':krHoje.marcoDias+' dias';
-    const prazoFmt=krHoje.marcoPrazo?parseLocalDate(krHoje.marcoPrazo).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):'';
-    document.getElementById('kr-hoje-marco').innerHTML=krHoje.marco
-      ?`<span style="color:${cor}">→ próximo passo: ${krHoje.marco}</span>`:'';
-    document.getElementById('kr-hoje-dias').childNodes[0].textContent=diasLabel;
-    document.getElementById('kr-hoje-dias-label').textContent=prazoFmt?'· '+prazoFmt:'';
-    document.getElementById('kr-hoje-dias').style.color=cor;
-  } else {
-    block.innerHTML='<div style="font-size:18px">🎉</div><div><div class="kr-hoje-label">Foco estratégico</div><div class="kr-hoje-text">Todos os OKRs concluídos!</div></div>';
-  }
 }
 
 // ── ROTINAS ──
@@ -735,24 +480,38 @@ function delRotina(id){
 // ── PENDÊNCIAS ──
 async function initPend(){
   try{
-    // busca todas pendências não concluídas (qualquer data) + concluídas de hoje
-    const naoFeitas=await supaFetch('pendencias?done=eq.false&order=data.asc,id.asc&limit=200');
-    const feitasHoje=await supaFetch('pendencias?done=eq.true&data=eq.'+TODAY+'&order=id.asc&limit=200');
+    // busca não concluídas de qualquer data
+    const naoFeitas=await supaFetch('pendencias?done=eq.false&order=id.asc');
+    // busca concluídas só de hoje
+    const feitasHoje=await supaFetch('pendencias?done=eq.true&data=eq.'+TODAY+'&order=id.asc');
     
-    const pendNaoFeitas=(naoFeitas||[]).map(r=>({
-      id:r.id,text:r.texto,done:false,
-      carryover:r.data!==TODAY,
-      recorrente:r.recorrente,recId:r.rec_id
-    }));
-    const pendFeitas=(feitasHoje||[]).map(r=>({
-      id:r.id,text:r.texto,done:true,
-      carryover:false,recorrente:r.recorrente,recId:r.rec_id
-    }));
-    
-    const items=[...pendNaoFeitas,...pendFeitas];
+    if(naoFeitas===null&&feitasHoje===null){
+      throw new Error('Supabase retornou null');
+    }
+
+    function parseTags(r){
+      if(r.recorrente) return [];
+      try{const t=JSON.parse(r.rec_id);if(Array.isArray(t))return t;}catch(e){}
+      return [];
+    }
+    const items=[
+      ...(naoFeitas||[]).map(r=>({
+        id:r.id,text:r.texto,done:false,
+        carryover:r.data!==TODAY,
+        recorrente:r.recorrente,recId:r.rec_id,
+        tags:parseTags(r)
+      })),
+      ...(feitasHoje||[]).map(r=>({
+        id:r.id,text:r.texto,done:true,
+        carryover:false,recorrente:r.recorrente,recId:r.rec_id,
+        tags:parseTags(r)
+      }))
+    ];
     sv('pend_list',items);sv('pend_date',TODAY);
     renderPend(items);return;
-  }catch(e){console.error('initPend error:',e);}
+  }catch(e){
+    console.error('initPend error:',e);
+  }
 
   // fallback localStorage
   const lastDate=ld('pend_date',null);let items=ld('pend_list',[]);
@@ -762,10 +521,66 @@ async function initPend(){
   }else if(!lastDate)sv('pend_date',TODAY);
   renderPend(items);
 }
+// ── EDITOR DE ETIQUETAS ──
+function openTagEditor(item, div, items){
+  // remove editor existente
+  document.querySelectorAll('.tag-editor-popup').forEach(e=>e.remove());
+  const popup=document.createElement('div');
+  popup.className='tag-editor-popup';
+  popup.style.cssText='position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;z-index:50;display:flex;gap:6px;flex-wrap:wrap;box-shadow:0 4px 12px rgba(0,0,0,0.1);';
+  const tagDefs=[
+    {id:'jessica',label:'🩷 Jéssica'},{id:'juliana',label:'🟣 Juliana'},
+    {id:'alta',label:'🔴 Alta'},{id:'media',label:'🟡 Média'},{id:'baixa',label:'🟢 Baixa'}
+  ];
+  let currentTags=new Set(item.tags||[]);
+  tagDefs.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.textContent=t.label;
+    btn.style.cssText='font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:"DM Mono",monospace;';
+    if(currentTags.has(t.id)) btn.classList.add('selected-'+t.id);
+    btn.onclick=async()=>{
+      if(currentTags.has(t.id)){currentTags.delete(t.id);btn.className='';}
+      else{currentTags.add(t.id);btn.className='selected-'+t.id;}
+      const newTags=[...currentTags];
+      // salva no Supabase
+      if(item.id) await supaFetch('pendencias?id=eq.'+item.id,'PATCH',{rec_id:newTags.length?JSON.stringify(newTags):null});
+      // atualiza localStorage
+      const its=ld('pend_list',[]);
+      const oi=its.findIndex(x=>x.id===item.id);
+      if(oi>=0){its[oi].tags=newTags;sv('pend_list',its);}
+      item.tags=newTags;
+      // re-render só as tags no item
+      const tgWrap=div.querySelector('.pend-tags');
+      if(tgWrap) tgWrap.remove();
+      const tagNames={'jessica':'Jéssica','juliana':'🟣 Juliana','alta':'🔴 Alta','media':'🟡 Média','baixa':'🟢 Baixa'};
+      if(newTags.length){
+        const nw=document.createElement('div');nw.className='pend-tags';
+        newTags.forEach(tg=>{const s=document.createElement('span');s.className='etiqueta etiqueta-'+tg;s.textContent=tagNames[tg];nw.appendChild(s);});
+        div.querySelector('.item-edit').before(nw);
+      }
+    };
+    popup.appendChild(btn);
+  });
+  // fecha ao clicar fora
+  setTimeout(()=>document.addEventListener('click',function close(){popup.remove();document.removeEventListener('click',close);},{once:true}),10);
+  div.style.position='relative';
+  div.appendChild(popup);
+}
+
 function renderPend(items){
   const list=document.getElementById('pend-list');list.innerHTML='';
   if(!items.length){list.innerHTML='<div class="empty-state">nenhuma pendência ainda</div>';updateProg();return;}
-  items.forEach((item,i)=>{
+  // ordena: não feitas primeiro, depois por prioridade (alta > media > baixa > sem)
+  const prioOrder={'alta':0,'media':1,'baixa':2};
+  const sorted=[...items].sort((a,b)=>{
+    if(a.done!==b.done) return a.done?1:-1;
+    const pa=a.tags&&a.tags.find(t=>prioOrder[t]!==undefined);
+    const pb=b.tags&&b.tags.find(t=>prioOrder[t]!==undefined);
+    const va=pa!==undefined?prioOrder[pa]:99;
+    const vb=pb!==undefined?prioOrder[pb]:99;
+    return va-vb;
+  });
+  sorted.forEach((item,i)=>{
     const div=document.createElement('div');
     div.className='pend-item'+(item.done?' done':'');
     div.draggable=true;div.dataset.idx=i;
@@ -782,8 +597,12 @@ function renderPend(items){
       sv('pend_list',its);renderPend(its);
     });
     const chk=document.createElement('div');
-    chk.className='check-box';chk.style.cssText=item.done?'background:var(--accent);border-color:var(--accent);':'';
-    chk.innerHTML=item.done?CHK:'';chk.onclick=()=>togglePend(i);
+    chk.className='check-box';chk.style.cssText=item.done?'background:var(--accent);border-color:var(--accent)':'';
+    chk.innerHTML=item.done?CHK:'';chk.onclick=()=>{
+      const its=ld('pend_list',[]);
+      const oi=item.id?its.findIndex(x=>x.id===item.id):its.findIndex(x=>x.text===item.text);
+      if(oi>=0)togglePend(oi);
+    };
     const txt=document.createElement('span');
     txt.className='pend-text';txt.textContent=item.text;
     // dblclick to edit inline
@@ -792,18 +611,59 @@ function renderPend(items){
       const range=document.createRange();range.selectNodeContents(txt);
       const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
     });
-    txt.addEventListener('blur',()=>{
+    txt.addEventListener('blur',async()=>{
       txt.contentEditable='false';
-      const its=ld('pend_list',[]);its[i].text=txt.textContent.trim()||its[i].text;
-      sv('pend_list',its);
+      const novo=txt.textContent.trim();
+      if(!novo||novo===item.text) return;
+      const its=ld('pend_list',[]);its[i].text=novo;sv('pend_list',its);
+      // salva no Supabase
+      if(item.id) await supaFetch('pendencias?id=eq.'+item.id,'PATCH',{texto:novo});
+    });
+    txt.addEventListener('dblclick',()=>{
+      txt.contentEditable='true';txt.focus();
+      const range=document.createRange();range.selectNodeContents(txt);
+      const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+    });
+    txt.addEventListener('blur',async()=>{
+      txt.contentEditable='false';
+      const novo=txt.textContent.trim();
+      if(!novo||novo===item.text) return;
+      const its=ld('pend_list',[]);
+      const oi=its.findIndex(x=>x.id===item.id);
+      if(oi>=0){its[oi].text=novo;sv('pend_list',its);}
+      if(item.id) await supaFetch('pendencias?id=eq.'+item.id,'PATCH',{texto:novo});
     });
     txt.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();txt.blur();}});
-    div.appendChild(document.createElement('span')).className='drag-handle';
-    div.querySelector('.drag-handle').textContent='⠿';
+    const dragHandle=document.createElement('span');dragHandle.className='drag-handle';dragHandle.textContent='⠿';
+    div.appendChild(dragHandle);
     div.appendChild(chk);div.appendChild(txt);
     if(item.carryover){const c=document.createElement('span');c.className='pend-carry';c.textContent='↩';div.appendChild(c);}
-    if(item.recorrente){const r=document.createElement('span');r.className='pend-recorrente';r.textContent='↻ recorrente';div.appendChild(r);}
-    const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>delPend(i);
+    if(item.recorrente){const r=document.createElement('span');r.className='pend-recorrente';r.textContent='↻';div.appendChild(r);}
+    // etiquetas
+    const tagNames={'jessica':'Jéssica','juliana':'🟣 Juliana','alta':'🔴 Alta','media':'🟡 Média','baixa':'🟢 Baixa'};
+    // garante que tags é array — pode vir como string do Supabase
+    let itemTags=item.tags||[];
+    if(typeof itemTags==='string'){try{itemTags=JSON.parse(itemTags);}catch(e){itemTags=[];}}
+    if(!Array.isArray(itemTags)) itemTags=[];
+    // também tenta parsear recId se tags estiver vazio
+    if(!itemTags.length&&item.recId&&!item.recorrente){
+      try{const t=JSON.parse(item.recId);if(Array.isArray(t))itemTags=t;}catch(e){}
+    }
+    if(itemTags.length){
+      const tgWrap=document.createElement('div');tgWrap.className='pend-tags';
+      itemTags.forEach(t=>{const tg=document.createElement('span');tg.className='etiqueta etiqueta-'+t;tg.textContent=tagNames[t]||t;tgWrap.appendChild(tg);});
+      div.appendChild(tgWrap);
+    }
+    // botão editar etiquetas
+    const tagBtn=document.createElement('button');
+    tagBtn.className='item-edit';tagBtn.textContent='🏷';tagBtn.title='editar etiquetas';
+    tagBtn.onclick=(e)=>{e.stopPropagation();openTagEditor(item,div,items);};
+    div.appendChild(tagBtn);
+    const del=document.createElement('button');del.className='item-del';del.textContent='×';del.onclick=()=>{
+      const its=ld('pend_list',[]);
+      const oi=item.id?its.findIndex(x=>x.id===item.id):its.findIndex(x=>x.text===item.text);
+      if(oi>=0)delPend(oi);
+    };
     div.appendChild(del);
     list.appendChild(div);
   });
@@ -815,9 +675,11 @@ function renderPend(items){
 }
 async function addPend(){
   const input=document.getElementById('add-input');const text=input.value.trim();if(!text)return;input.value='';
-  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false});
+  const tags=[...selectedTags];
+  resetTags();
+  const row=await supaFetch('pendencias','POST',{data:TODAY,texto:text,done:false,carryover:false,recorrente:false,rec_id:tags.length?JSON.stringify(tags):null});
   const items=ld('pend_list',[]);
-  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false});
+  items.push({id:row&&row[0]?row[0].id:null,text,done:false,carryover:false,tags});
   sv('pend_list',items);sv('pend_date',TODAY);renderPend(items);
 }
 async function togglePend(i){
@@ -889,133 +751,7 @@ function togglePomo(){
 }
 function resetPomo(){clearInterval(ps.interval);ps={...ps,phase:'foco',secs:POMO.FOCO,running:false,interval:null};document.getElementById('pomo-start-btn').textContent='iniciar';updatePomoDisplay();renderDots();}
 
-// ── MARCOS ──
-function toggleMarco(kr,idx){
-  const key='kr'+kr+'_marcos';const state=ld(key,new Array(10).fill(false));state[idx]=!state[idx];sv(key,state);
-  if(state[idx]){
-    const kr_def=KRS.find(k=>k.id===kr);
-    if(kr_def&&kr_def.marcos[idx]){
-      const log=ld('hist_'+TODAY,[]);
-      const txt='✓ [KR] '+kr_def.marcos[idx];
-      if(!log.some(e=>e.texto===txt))logHist(txt,'marco');
-    }
-  }
-  renderMarcos(kr,state);initCountdown();
-}
-function renderMarcos(kr,state){
-  const total=state.filter((_,i)=>document.getElementById('kr'+kr+'-m'+i)).length||state.length;
-  const done=state.slice(0,total).filter(Boolean).length;
-  const pct=total?Math.round((done/total)*100):0;
-  state.forEach((v,i)=>{
-    const item=document.querySelector(`.marco-item[data-kr="${kr}"][data-idx="${i}"]`);
-    const check=document.getElementById('kr'+kr+'-m'+i);if(!item||!check)return;
-    if(v){item.classList.add('done');check.classList.add('done');check.innerHTML='<svg width="9" height="7" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
-    else{item.classList.remove('done');check.classList.remove('done');check.innerHTML='';}
-  });
-  const fill=document.getElementById('kr'+kr+'-fill');const pctEl=document.getElementById('kr'+kr+'-pct');
-  if(fill){fill.style.width=pct+'%';fill.className='kr-progress-fill '+(pct<30?'fill-red':pct<70?'fill-amber':'fill-green');}
-  if(pctEl)pctEl.textContent=pct+'%';
-  const krs=ld('krs',{});krs['kr'+kr]=pct;sv('krs',krs);updateOKRProgress();
-  supaFetch('okr_progresso?kr_id=eq.'+kr,'PATCH',{progresso:pct,marcos:state}).then(r=>{
-    if(!r||!r.length) supaFetch('okr_progresso','POST',{kr_id:kr,progresso:pct,marcos:state});
-  });
-}
-function initMarcos(){
-  renderMarcos(1,ld('kr1_marcos',[false,false,false,false]));
-  renderMarcos(2,ld('kr2_marcos',new Array(14).fill(false)));
-  renderMarcos(4,ld('kr4_marcos',[false,false,false]));
-  renderMarcos(5,ld('kr5_marcos',[false,false,false,false,false]));
-}
 
-// ── KRs ──
-function updateKR(n,v){
-  v=parseInt(v);document.getElementById('kr'+n+'-pct').textContent=v+'%';
-  const f=document.getElementById('kr'+n+'-fill');f.style.width=v+'%';f.className='kr-progress-fill '+(v<30?'fill-red':v<70?'fill-amber':'fill-green');
-  const krs=ld('krs',{});krs['kr'+n]=v;sv('krs',krs);updateOKRProgress();
-  supaFetch('okr_progresso?kr_id=eq.'+n,'PATCH',{progresso:v}).then(r=>{
-    if(!r||!r.length) supaFetch('okr_progresso','POST',{kr_id:n,progresso:v});
-  });
-}
-supaFetch('okr_progresso').then(rows=>{
-  if(!rows||!rows.length){
-    const krs=ld('krs',{});[3].forEach(n=>{const v=krs['kr'+n];const el=document.getElementById('kr'+n+'-range');if(v!==undefined&&el){el.value=v;updateKR(n,v);}});
-    return;
-  }
-  const krs=ld('krs',{});
-  rows.forEach(r=>{
-    krs['kr'+r.kr_id]=r.progresso;sv('krs',krs);
-    if(r.marcos){
-      const m=Array.isArray(r.marcos)?r.marcos:JSON.parse(r.marcos);
-      sv('kr'+r.kr_id+'_marcos',m);renderMarcos(r.kr_id,m);
-    }
-    const el=document.getElementById('kr'+r.kr_id+'-range');
-    if(el){el.value=r.progresso;updateKR(r.kr_id,r.progresso);}
-  });
-  updateOKRProgress();initCountdown();
-});
-
-// ── NOTAS DOS KRs ──
-function toggleKrNota(kr){
-  const wrap=document.getElementById('kr'+kr+'-nota-wrap');
-  const lbl=document.getElementById('kr'+kr+'-nota-lbl');
-  const isOpen=wrap.classList.contains('open');
-  wrap.classList.toggle('open');
-  const notas=ld('kr_notas_'+kr,[]);
-  lbl.textContent=isOpen?'notas'+(notas.length?' ('+notas.length+')':''):'fechar notas'+(notas.length?' ('+notas.length+')':'');
-  if(!isOpen) renderKrNotas(kr);
-}
-function renderKrNotas(kr){
-  const notas=ld('kr_notas_'+kr,[]);
-  const list=document.getElementById('kr'+kr+'-nota-list');
-  if(!list)return;
-  if(!notas.length){list.innerHTML='<div class="kr-nota-empty">nenhuma observação ainda</div>';return;}
-  list.innerHTML='';
-  notas.slice().reverse().forEach((n,revIdx)=>{
-    const origIdx=notas.length-1-revIdx;
-    const div=document.createElement('div');
-    div.className='kr-nota-entry';
-    div.innerHTML='<div class="kr-nota-entry-content"><div class="kr-nota-data">'+n.data+' às '+n.hora+'</div><div class="kr-nota-texto" id="kr-nota-txt-'+kr+'-'+origIdx+'">'+n.texto+'</div></div><div class="kr-nota-actions"><button class="kr-nota-action-btn" onclick="editKrNota('+kr+','+origIdx+')" title="editar">✎</button><button class="kr-nota-action-btn del" onclick="delKrNota('+kr+','+origIdx+')" title="excluir">×</button></div>';
-    const txt=div.querySelector('.kr-nota-texto');
-    txt.addEventListener('dblclick',()=>{txt.contentEditable='true';txt.focus();const r=document.createRange();r.selectNodeContents(txt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);});
-    txt.addEventListener('blur',()=>{txt.contentEditable='false';const ns=ld('kr_notas_'+kr,[]);const novo=txt.textContent.trim();if(novo&&novo!==ns[origIdx].texto){ns[origIdx].texto=novo;sv('kr_notas_'+kr,ns);}renderKrNotas(kr);});
-    txt.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();txt.blur();}});
-    list.appendChild(div);
-  });
-}
-async function addKrNota(kr){
-  const input=document.getElementById('kr'+kr+'-nota-input');
-  const texto=input.value.trim();if(!texto)return;input.value='';
-  const hoje=new Date();
-  const data=hoje.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
-  const hora=hoje.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  const nota={texto,data,hora,id:Date.now()};
-  const notas=ld('kr_notas_'+kr,[]);notas.push(nota);sv('kr_notas_'+kr,notas);
-  await supaFetch('historico','POST',{data:hoje.toISOString().split('T')[0],texto:'[KR'+kr+'] '+texto,tipo:'nota_kr',hora});
-  renderKrNotas(kr);
-  const lbl=document.getElementById('kr'+kr+'-nota-lbl');
-  if(lbl) lbl.textContent='fechar notas ('+notas.length+')';
-}
-function editKrNota(kr,idx){
-  const txt=document.getElementById('kr-nota-txt-'+kr+'-'+idx);
-  if(!txt)return;
-  txt.contentEditable='true';txt.focus();
-  const r=document.createRange();r.selectNodeContents(txt);
-  const s=window.getSelection();s.removeAllRanges();s.addRange(r);
-}
-function delKrNota(kr,idx){
-  const notas=ld('kr_notas_'+kr,[]);
-  notas.splice(idx,1);sv('kr_notas_'+kr,notas);
-  const lbl=document.getElementById('kr'+kr+'-nota-lbl');
-  if(lbl) lbl.textContent=notas.length?'notas ('+notas.length+')':'notas';
-  renderKrNotas(kr);
-}
-function initKrNotas(){
-  [1,4,2,5,3].forEach(kr=>{
-    const notas=ld('kr_notas_'+kr,[]);
-    const lbl=document.getElementById('kr'+kr+'-nota-lbl');
-    if(lbl&&notas.length) lbl.textContent='notas ('+notas.length+')';
-  });
-}
 
 // ── DIÁRIO DE ANOTAÇÕES ──
 async function initDiario(){
@@ -1121,28 +857,36 @@ const RECORRENCIAS=[
 ];
 async function initRecorrencias(){
   const hoje=new Date();
-  const items=ld('pend_list',[]);
-  let changed=false;
   for(const r of RECORRENCIAS){
     if(!r.check(hoje)) continue;
-    const jaExiste=items.some(i=>i.recId===r.id);
-    if(!jaExiste){
-      const row=await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:false,recorrente:true,rec_id:r.id});
-      const id=row&&row[0]?row[0].id:null;
-      items.push({id,text:r.texto,done:false,carryover:false,recorrente:true,recId:r.id});
-      changed=true;
-    }
+    // verifica no Supabase se já existe hoje com esse rec_id
+    const jaExiste=await supaFetch('pendencias?data=eq.'+TODAY+'&rec_id=eq.'+r.id+'&limit=1');
+    if(jaExiste&&jaExiste.length>0) continue;
+    // também verifica se já existe com esse texto hoje (evita duplicata por texto)
+    const jaExisteTexto=await supaFetch('pendencias?data=eq.'+TODAY+'&texto=eq.'+encodeURIComponent(r.texto)+'&limit=1');
+    if(jaExisteTexto&&jaExisteTexto.length>0) continue;
+    // cria no Supabase
+    await supaFetch('pendencias','POST',{data:TODAY,texto:r.texto,done:false,carryover:false,recorrente:true,rec_id:r.id});
   }
-  if(changed){sv('pend_list',items);sv('pend_date',TODAY);}
+}
+
+// ── ETIQUETAS ──
+const selectedTags=new Set();
+function toggleTag(tag){
+  const btn=document.getElementById('tag-'+tag);
+  if(selectedTags.has(tag)){selectedTags.delete(tag);btn.className='tag-toggle';}
+  else{selectedTags.add(tag);btn.className='tag-toggle selected-'+tag;}
+}
+function resetTags(){
+  selectedTags.clear();
+  ['jessica','juliana','alta','media','baixa'].forEach(t=>{
+    const btn=document.getElementById('tag-'+t);
+    if(btn) btn.className='tag-toggle';
+  });
 }
 
 // ── INIT ──
-initAlertas();
-initCountdown();
-initKrNotas();
 initDiario();
-initMarcos();
-updateOKRProgress();
 initRoutines();
 initRecorrencias();
 initPend();
